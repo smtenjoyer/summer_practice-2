@@ -8,10 +8,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     socket = new QTcpSocket(this);
-    connect(socket, &QTcpSocket::connected, this, &MainWindow::sockConnected);
-    connect(socket, &QTcpSocket::readyRead, this, &MainWindow::sockReady);
-    connect(socket, &QTcpSocket::disconnected, this, &MainWindow::sockDisc);
-    connect(socket, &QTcpSocket::errorOccurred, this, &MainWindow::sockError);
+    connect(socket,SIGNAL(readyRead()),this,SLOT(sockReady()));
+    connect(socket,SIGNAL(disconnected()),this,SLOT(sockDisc()));
 }
 
 MainWindow::~MainWindow()
@@ -21,18 +19,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_clicked()
 {
-    socket->connectToHost("127.0.0.1",5432);
-}
-
-void MainWindow::sockConnected() {
-    qDebug() << "Успешно подключено к серверу!";
+    socket->connectToHost("127.0.0.1",5555);
 }
 
 void MainWindow::sockDisc()
 {
-    qDebug() << "Отключено от сервера!";
     socket->deleteLater();
-    socket = nullptr;
 }
 
 void MainWindow::sockReady()
@@ -43,9 +35,4 @@ void MainWindow::sockReady()
         Data = socket->readAll();
         qDebug()<<Data;
     }
-}
-
-    void MainWindow::sockError(QAbstractSocket::SocketError error) {
-    qDebug() << "Ошибка сокета: " << socket->errorString();
-    QMessageBox::critical(this, "Ошибка подключения", "Не удалось подключиться к серверу: " + socket->errorString());
 }

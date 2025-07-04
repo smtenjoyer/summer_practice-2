@@ -24,9 +24,8 @@ public:
 
 public slots:
     void sockReady();
-    void sockConnected();
     void sockDisc();
-    void sockError(QAbstractSocket::SocketError error);
+
 private slots:
     void on_pushButton_clicked();
 

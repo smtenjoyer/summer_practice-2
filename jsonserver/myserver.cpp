@@ -1,5 +1,4 @@
 #include "myserver.h"
-#include <QTimer>
 
 myserver::myserver(){}
 
@@ -7,7 +6,7 @@ myserver::~myserver(){}
 
 void myserver::startServer()
 {
-    if (this->listen(QHostAddress::Any,5432))
+    if (this->listen(QHostAddress::Any,5555))
     {
         qDebug()<<"Listening";
     }
@@ -19,42 +18,25 @@ void myserver::startServer()
 
 void myserver::incomingConnection(int socketDescriptor)
 {
-    QTcpSocket *socket = new QTcpSocket(this);
-    if (!socket->setSocketDescriptor(socketDescriptor)) {
-        qDebug() << "Ошибка установки дескриптора сокета!";
-        socket->deleteLater();
-        return;
-    }
+    socket = new QTcpSocket(this);
+    socket->setSocketDescriptor(socketDescriptor);
 
-    connect(socket, &QTcpSocket::readyRead, this, &myserver::sockReady);
-    connect(socket, &QTcpSocket::disconnected, this, &myserver::sockDisc);
+    connect(socket,SIGNAL(readyRead()),this,SLOT(sockReady()));
+    connect(socket,SIGNAL(disconnected()),this,SLOT(sockDisc()));
 
-    qDebug() << socketDescriptor << " Client connected";
+    qDebug()<<socketDescriptor<<" Client connected";
 
-    QTimer::singleShot(100, [socket]() {
-        socket->write("You are connected\r\n");
-        qDebug() << "Send client connect status - YES";
-    });
+    socket->write("You are connect");
+    qDebug()<<"Send client connect status - YES";
 }
 
 void myserver::sockReady()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
 
-    if (!socket) {
-        qDebug() << "Ошибка: Не удалось получить сокет в sockReady!";
-        return;
-    }
-
-    QByteArray data = socket->readAll();
-    qDebug() << "Получено от клиента: " << data;
 }
 
 void myserver::sockDisc()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if(socket){
-        qDebug() << "Client disconnected";
-        socket->deleteLater();
-    }
+    qDebug()<<"Disconnect";
+    socket->deleteLater();
 }
