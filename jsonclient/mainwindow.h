@@ -6,7 +6,6 @@
 #include <QMessageBox>
 #include <QDebug>
 
-
 namespace Ui {
 class MainWindow;
 }
@@ -16,7 +15,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     QTcpSocket* socket;
@@ -25,6 +24,7 @@ public:
 public slots:
     void sockReady();
     void sockDisc();
+    void sendMessage();
 
 private slots:
     void on_pushButton_clicked();
