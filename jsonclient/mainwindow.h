@@ -5,6 +5,12 @@
 #include <QTcpSocket>
 #include <QMessageBox>
 #include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+#include <string>
+#include <QHostAddress>
+#include <QRegularExpression>
 
 namespace Ui {
 class MainWindow;
@@ -15,16 +21,18 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
     QTcpSocket* socket;
     QByteArray Data;
 
+    QJsonDocument doc;
+    QJsonParseError docError;
+
 public slots:
     void sockReady();
     void sockDisc();
-    void sendMessage();
 
 private slots:
     void on_pushButton_clicked();

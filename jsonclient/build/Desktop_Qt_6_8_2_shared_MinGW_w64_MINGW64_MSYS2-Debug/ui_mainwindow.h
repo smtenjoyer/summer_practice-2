@@ -11,14 +11,13 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QStatusBar>
-#include <QtWidgets/QTextBrowser>
-#include <QtWidgets/QToolBar>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -26,65 +25,61 @@ QT_BEGIN_NAMESPACE
 class Ui_MainWindow
 {
 public:
-    QWidget *centralWidget;
+    QWidget *centralwidget;
     QPushButton *pushButton;
-    QLineEdit *ipLineEdit;
-    QLineEdit *messageLineEdit;
-    QPushButton *sendButton;
-    QTextBrowser *textBrowser;
-    QLabel *statusLabel;
-    QLabel *label;
+    QWidget *gridLayoutWidget;
+    QGridLayout *gridLayout;
     QLabel *label_2;
-    QMenuBar *menuBar;
-    QToolBar *mainToolBar;
-    QStatusBar *statusBar;
+    QLineEdit *IPLineEdit;
+    QLineEdit *portLineEdit;
+    QLabel *label;
+    QMenuBar *menubar;
+    QStatusBar *statusbar;
 
     void setupUi(QMainWindow *MainWindow)
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName("MainWindow");
-        MainWindow->resize(400, 300);
-        centralWidget = new QWidget(MainWindow);
-        centralWidget->setObjectName("centralWidget");
-        pushButton = new QPushButton(centralWidget);
+        MainWindow->resize(486, 391);
+        centralwidget = new QWidget(MainWindow);
+        centralwidget->setObjectName("centralwidget");
+        pushButton = new QPushButton(centralwidget);
         pushButton->setObjectName("pushButton");
-        pushButton->setGeometry(QRect(40, 190, 301, 31));
-        QFont font;
-        font.setPointSize(12);
-        font.setBold(true);
-        pushButton->setFont(font);
-        ipLineEdit = new QLineEdit(centralWidget);
-        ipLineEdit->setObjectName("ipLineEdit");
-        ipLineEdit->setGeometry(QRect(70, 10, 151, 28));
-        messageLineEdit = new QLineEdit(centralWidget);
-        messageLineEdit->setObjectName("messageLineEdit");
-        messageLineEdit->setGeometry(QRect(110, 50, 113, 28));
-        sendButton = new QPushButton(centralWidget);
-        sendButton->setObjectName("sendButton");
-        sendButton->setGeometry(QRect(120, 90, 86, 29));
-        textBrowser = new QTextBrowser(centralWidget);
-        textBrowser->setObjectName("textBrowser");
-        textBrowser->setGeometry(QRect(230, 10, 161, 121));
-        statusLabel = new QLabel(centralWidget);
-        statusLabel->setObjectName("statusLabel");
-        statusLabel->setGeometry(QRect(20, 150, 62, 20));
-        label = new QLabel(centralWidget);
-        label->setObjectName("label");
-        label->setGeometry(QRect(10, 20, 41, 20));
-        label_2 = new QLabel(centralWidget);
+        pushButton->setGeometry(QRect(110, 260, 291, 29));
+        gridLayoutWidget = new QWidget(centralwidget);
+        gridLayoutWidget->setObjectName("gridLayoutWidget");
+        gridLayoutWidget->setGeometry(QRect(20, 20, 226, 80));
+        gridLayout = new QGridLayout(gridLayoutWidget);
+        gridLayout->setObjectName("gridLayout");
+        gridLayout->setContentsMargins(0, 0, 0, 0);
+        label_2 = new QLabel(gridLayoutWidget);
         label_2->setObjectName("label_2");
-        label_2->setGeometry(QRect(0, 50, 101, 20));
-        MainWindow->setCentralWidget(centralWidget);
-        menuBar = new QMenuBar(MainWindow);
-        menuBar->setObjectName("menuBar");
-        menuBar->setGeometry(QRect(0, 0, 400, 25));
-        MainWindow->setMenuBar(menuBar);
-        mainToolBar = new QToolBar(MainWindow);
-        mainToolBar->setObjectName("mainToolBar");
-        MainWindow->addToolBar(Qt::ToolBarArea::TopToolBarArea, mainToolBar);
-        statusBar = new QStatusBar(MainWindow);
-        statusBar->setObjectName("statusBar");
-        MainWindow->setStatusBar(statusBar);
+
+        gridLayout->addWidget(label_2, 1, 0, 1, 1);
+
+        IPLineEdit = new QLineEdit(gridLayoutWidget);
+        IPLineEdit->setObjectName("IPLineEdit");
+
+        gridLayout->addWidget(IPLineEdit, 0, 1, 1, 1);
+
+        portLineEdit = new QLineEdit(gridLayoutWidget);
+        portLineEdit->setObjectName("portLineEdit");
+
+        gridLayout->addWidget(portLineEdit, 1, 1, 1, 1);
+
+        label = new QLabel(gridLayoutWidget);
+        label->setObjectName("label");
+
+        gridLayout->addWidget(label, 0, 0, 1, 1);
+
+        MainWindow->setCentralWidget(centralwidget);
+        menubar = new QMenuBar(MainWindow);
+        menubar->setObjectName("menubar");
+        menubar->setGeometry(QRect(0, 0, 486, 25));
+        MainWindow->setMenuBar(menubar);
+        statusbar = new QStatusBar(MainWindow);
+        statusbar->setObjectName("statusbar");
+        MainWindow->setStatusBar(statusbar);
 
         retranslateUi(MainWindow);
 
@@ -95,10 +90,8 @@ public:
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         pushButton->setText(QCoreApplication::translate("MainWindow", "\320\241\320\276\320\265\320\264\320\270\320\275\320\270\321\202\321\214\321\201\321\217 \321\201 \321\201\320\265\321\200\320\262\320\265\321\200\320\276\320\274", nullptr));
-        sendButton->setText(QCoreApplication::translate("MainWindow", "\320\236\321\202\320\277\321\200\320\260\320\262\320\270\321\202\321\214", nullptr));
-        statusLabel->setText(QCoreApplication::translate("MainWindow", "TextLabel", nullptr));
-        label->setText(QCoreApplication::translate("MainWindow", "IP:", nullptr));
-        label_2->setText(QCoreApplication::translate("MainWindow", "\320\241\320\276\320\276\320\261\321\211\320\265\320\275\320\270\320\265", nullptr));
+        label_2->setText(QCoreApplication::translate("MainWindow", "\320\237\320\276\321\200\321\202 \321\201\320\265\321\200\320\262\320\265\321\200\320\260:", nullptr));
+        label->setText(QCoreApplication::translate("MainWindow", "IP \321\201\320\265\321\200\320\262\320\265\321\200\320\260:", nullptr));
     } // retranslateUi
 
 };

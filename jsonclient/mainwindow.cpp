@@ -1,22 +1,15 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QPushButton>
-#include <QLineEdit>
-#include <QLabel>
-#include <QTextBrowser>
-
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
     socket = new QTcpSocket(this);
-    connect(socket, &QTcpSocket::readyRead, this, &MainWindow::sockReady);
-    connect(socket, &QTcpSocket::disconnected, this, &MainWindow::sockDisc);
-
-    connect(ui->sendButton, &QPushButton::clicked, this, &MainWindow::sendMessage);
+    connect(socket,SIGNAL(readyRead()),this,SLOT(sockReady()));
+    connect(socket,SIGNAL(disconnected()),this,SLOT(sockDisc()));
 }
 
 MainWindow::~MainWindow()
@@ -26,33 +19,63 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_clicked()
 {
-    QString ip = ui->ipLineEdit->text();
-    socket->connectToHost(ip, 5555);
+    QString IP = ui->IPLineEdit->text();
 
-    if(socket->waitForConnected(1000)) {
-        ui->statusLabel->setText("Connected to server");
-    } else {
-        ui->statusLabel->setText("Connection failed");
+    QRegularExpression ipRegex(R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)");
+    if (!ipRegex.match(IP).hasMatch()) {
+        QMessageBox::warning(this, "Ошибка", "Неверный формат IP-адреса.");
+        return;
     }
+
+    QHostAddress addr(IP);
+    if(addr.protocol() == QAbstractSocket::UnknownSocketType){
+        QMessageBox::warning(this, "Ошибка", "Неверный IP-адрес (ошибка QHostAddress).");
+        return;
+    }
+
+    bool ok;
+    int port = ui->portLineEdit->text().toInt(&ok);
+
+    if (!ok) {
+        QMessageBox::warning(this, "Ошибка", "Неверный формат порта.  Введите число.");
+        return;
+    }
+
+    if ((port < 1) || (port > 65535)) {
+        QMessageBox::warning(this, "Ошибка", "Порт должен быть в диапазоне от 1 до 65535.");
+        return;
+    }
+
+    socket->connectToHost(IP, port);
+    qDebug() << "Попытка подключения к " << IP << ": " << port;
+
 }
 
-void MainWindow::sendMessage()
+void MainWindow::sockDisc()
 {
-    QString message = ui->messageLineEdit->text();
-    socket->write(message.toUtf8());
-    ui->messageLineEdit->clear();
+    socket->deleteLater();
 }
 
 void MainWindow::sockReady()
 {
-    QByteArray data = socket->readAll();
-    ui->textBrowser->append("Server: " + QString(data));
-}
+    if (socket->waitForConnected(500))
+    {
+        socket->waitForReadyRead(500);
+        Data = socket->readAll();
 
-void MainWindow::sockDisc() {
-    if (socket) {
-        ui->statusLabel->setText("Disconnected");
-        socket->deleteLater();
-        socket = nullptr;
+        doc = QJsonDocument::fromJson(Data, &docError);
+        if (docError.errorString().toInt()==QJsonParseError::NoError)
+        {
+            if ((doc.object().value("type").toString() == "connection" ) && (doc.object().value("status").toString() == "yes" ))
+            {
+                QMessageBox::information(this, "Информация", "Соединение установлено");
+            } else {
+                QMessageBox::information(this, "Информация", "Соединение не установлено");
+            }
+        } else {
+            QMessageBox::information(this, "Информация", "Ошибки с форматом передачи данных" + docError.errorString());
+        }
+
+        qDebug()<<Data;
     }
 }

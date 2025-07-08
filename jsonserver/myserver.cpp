@@ -18,35 +18,25 @@ void myserver::startServer()
 
 void myserver::incomingConnection(qintptr socketDescriptor)
 {
-    QTcpSocket *socket = new QTcpSocket(this);
+    socket = new QTcpSocket(this);
     socket->setSocketDescriptor(socketDescriptor);
 
-    connect(socket, &QTcpSocket::readyRead, this, &myserver::sockReady);
-    connect(socket, &QTcpSocket::disconnected, this, &myserver::sockDisc);
+        connect(socket,SIGNAL(readyRead()),this,SLOT(sockReady()));
+        connect(socket,SIGNAL(disconnected()),this,SLOT(sockDisc()));
 
-    clients.insert(socket);
-    qDebug() << socketDescriptor << "Client connected";
+    qDebug()<<socketDescriptor<<" Client connected";
 
-    socket->write("You are connected to the server!\n");
+    socket->write("{\"type\":\"connection\",\"status\":\"yes\"}");
+    qDebug()<<"Send client connect status - YES";
 }
 
 void myserver::sockReady()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (socket) {
-        QByteArray data = socket->readAll();
-        qDebug() << "Received:" << data;
 
-        socket->write(QString("Server echo: " + data).toUtf8());
-    }
 }
 
 void myserver::sockDisc()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (socket) {
-        qDebug() << socket->socketDescriptor() << "Client disconnected";
-        clients.remove(socket);
-        socket->deleteLater();
-    }
+    qDebug()<<"Disconnect";
+    socket->deleteLater();
 }

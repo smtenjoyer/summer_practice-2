@@ -13,9 +13,9 @@ EQ            = =
 
 CC            = gcc
 CXX           = g++
-DEFINES       = -DUNICODE -D_UNICODE -DWIN32 -DMINGW_HAS_SECURE_API=1 -DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_NEEDS_QMAIN
+DEFINES       = -DUNICODE -D_UNICODE -DWIN32 -DMINGW_HAS_SECURE_API=1 -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_NEEDS_QMAIN
 CFLAGS        = -fno-keep-inline-dllexport -march=nocona -msahf -mtune=generic -Wa,-mbig-obj -g -Wall -Wextra -Wextra $(DEFINES)
-CXXFLAGS      = -fno-keep-inline-dllexport -march=nocona -msahf -mtune=generic -Wa,-mbig-obj -g -Wall -Wextra -Wextra -fexceptions -mthreads $(DEFINES)
+CXXFLAGS      = -fno-keep-inline-dllexport -march=nocona -msahf -mtune=generic -Wa,-mbig-obj -g -std=gnu++1z -Wall -Wextra -Wextra -fexceptions -mthreads $(DEFINES)
 INCPATH       = -I../../../jsonclient -I. -IC:/msys64/mingw64/include/qt6 -IC:/msys64/mingw64/include/qt6/QtWidgets -IC:/msys64/mingw64/include/qt6/QtGui -IC:/msys64/mingw64/include/qt6/QtNetwork -IC:/msys64/mingw64/include/qt6/QtCore -Idebug -I. -I/include -IC:/msys64/mingw64/share/qt6/mkspecs/win32-g++ 
 LINKER      =        g++
 LFLAGS        =        -Wl,-subsystem,windows -mthreads
@@ -103,7 +103,7 @@ compiler_moc_predefs_make_all: debug/moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) debug\moc_predefs.h
 debug/moc_predefs.h: C:/msys64/mingw64/share/qt6/mkspecs/features/data/dummy.cpp
-	g++ -fno-keep-inline-dllexport -march=nocona -msahf -mtune=generic -Wa,-mbig-obj -g -Wall -Wextra -Wextra -dM -E -o debug\moc_predefs.h C:\msys64\mingw64\share\qt6\mkspecs\features\data\dummy.cpp
+	g++ -fno-keep-inline-dllexport -march=nocona -msahf -mtune=generic -Wa,-mbig-obj -g -std=gnu++1z -Wall -Wextra -Wextra -dM -E -o debug\moc_predefs.h C:\msys64\mingw64\share\qt6\mkspecs\features\data\dummy.cpp
 
 compiler_moc_header_make_all: debug/moc_mainwindow.cpp
 compiler_moc_header_clean:
@@ -140,7 +140,7 @@ debug/main.o: ../../main.cpp ../../mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\main.o ..\..\main.cpp
 
 debug/mainwindow.o: ../../mainwindow.cpp ../../mainwindow.h \
-		../../ui_mainwindow.h
+		ui_mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\mainwindow.o ..\..\mainwindow.cpp
 
 debug/moc_mainwindow.o: debug/moc_mainwindow.cpp 
