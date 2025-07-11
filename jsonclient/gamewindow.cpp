@@ -23,7 +23,6 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
     QSize newSize(800, 600);
     m_doodleArea = new DoodleArea(newSize);
     setCentralWidget(m_doodleArea);
-    // connect(m_doodleArea, &DoodleArea::pointsUpdated, this, &GameWindow::sendDrawingPoints);
 }
 
 GameWindow::~GameWindow()
@@ -75,12 +74,6 @@ void GameWindow::processServerMessage(const QJsonObject &message)
                 QJsonObject pointObj = val.toObject();
                 points.append(QPoint(pointObj["x"].toInt(), pointObj["y"].toInt()));
             }
-
-            // Отрисовка полученных точек
-            //Check it Doodle Area name
-            //if (!points.isEmpty()) {
-            //m_doodleArea->drawPoints(points); // Предполагается, что у вас есть такой метод
-            //}
         }
     }
     else if (type == "chat") {
@@ -102,7 +95,7 @@ void GameWindow::processServerMessage(const QJsonObject &message)
 }
 
 void GameWindow::setupGameUI(bool isDrawer){
-    // ui->drawingWidget->setVisible(isDrawer);
+    // ui->drawingWidget->setVisible(isDrawer);  !!!!!!!!!!!!!!
     // ui->guessWidget->setVisible(!isDrawer);
 
     if (isDrawer){
