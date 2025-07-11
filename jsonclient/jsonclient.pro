@@ -15,7 +15,6 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
-    command.h \
     doodlearea.h \
     gamewindow.h \
     mainwindow.h

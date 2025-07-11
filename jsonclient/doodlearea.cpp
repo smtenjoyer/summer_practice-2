@@ -384,9 +384,13 @@ QUndoStack* DoodleArea::getUndoStack() const {
     return undoStack;
 }
 
-// void DoodleArea::addPoint(const QPoint &point){
-//     m_points.append(point);
-//     update();
 
-//     emit pointsUpdated();
-// }
+
+
+
+
+
+
+
+
+

@@ -39,7 +39,7 @@ private:
     QString m_playerName;
     bool m_isDrawing;
 
-    DoodleArea *doodleArea = nullptr;
+    DoodleArea *m_doodleArea = nullptr;
 
 };
 

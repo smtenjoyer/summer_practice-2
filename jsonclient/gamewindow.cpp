@@ -1,13 +1,16 @@
+
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
 #include <QJsonDocument>
+#include "DoodleArea.h"
 
 GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::GameWindow),
     m_socket(socket),
     m_playerName(playerName),
-    m_isDrawing(false)
+    m_isDrawing(false),
+    m_doodleArea(nullptr)
 {
     ui->setupUi(this);
 
@@ -15,13 +18,12 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     connect(ui->sendGuessButton, &QPushButton::clicked, this, &GameWindow::on_sendGuessButton_clicked);
 
-
     setupGameUI(false);
 
     QSize newSize(800, 600);
     m_doodleArea = new DoodleArea(newSize);
     setCentralWidget(m_doodleArea);
-    connect(m_doodleArea, &DoodleArea::pointsUpdated, this, &GameWindow::sendDrawingPoints);
+    // connect(m_doodleArea, &DoodleArea::pointsUpdated, this, &GameWindow::sendDrawingPoints);
 }
 
 GameWindow::~GameWindow()
@@ -100,8 +102,8 @@ void GameWindow::processServerMessage(const QJsonObject &message)
 }
 
 void GameWindow::setupGameUI(bool isDrawer){
-    ui->drawingWidget->setVisible(isDrawer);
-    ui->guessWidget->setVisible(!isDrawer);
+    // ui->drawingWidget->setVisible(isDrawer);
+    // ui->guessWidget->setVisible(!isDrawer);
 
     if (isDrawer){
         ui->wordLabel->setText("Ваш ход рисовать!");
@@ -126,3 +128,5 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
     QJsonDocument doc(message);
     m_socket->write(doc.toJson());
 }
+
+

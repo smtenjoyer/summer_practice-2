@@ -47,20 +47,12 @@ public:
     void drawLineTo(const QPoint &endPoint);
 
     int myPenWidth;
-
-    QVector<QPoint> getPoints() const { return m_points; }
-    void clearPoints() {m_points.clear(); update();}
-    void addPoint(const QPoint& point);
-
 public slots:
     void clearImage();
     void resizeCanvas();
 
     void undo();
     void redo();
-
-signals:
-    void pointsUpdated(const QVector<QPoint>& points);
 
 private:
     void mousePressEvent(QMouseEvent *event) override;
@@ -104,8 +96,6 @@ private:
     double m_scaleFactor = 1.0;
     QPoint m_offset;
     QPoint m_lastMousePosition;
-
-    QVector<QPoint> m_points;
 };
 
 #endif // DOODLEAREA_H

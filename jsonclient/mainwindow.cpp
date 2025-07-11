@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_socket(new QTcpSocket(this))
 {
     ui->setupUi(this);
+    // Signals and slots connections in MainWindow
 
     connect(m_socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
     connect(m_socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
@@ -64,14 +65,14 @@ void MainWindow::onConnected(){
     ui->statusLabel->setText("Подключено к серверу");
     ui->connectButton->setEnabled(false);
 
-
-    m_gameWindow = new GameWindow(m_socket, m_playerName, this);
+    // Create and show the GameWindow
+    m_gameWindow = new GameWindow(m_socket, m_playerName, this); // Pass socket and player name
     m_gameWindow->show();
 
     QJsonObject message;
     message["type"] = "register";
     message["name"] = m_playerName;
-    sendJsonMessage(message);
+    sendJsonMessage(message); // Send message
     connect(m_gameWindow, &GameWindow::sendMessage, this, &MainWindow::sendJsonMessage);
 
 }
@@ -97,7 +98,7 @@ void MainWindow::onReadyRead()
 
         if (doc.isObject()) {
             if (m_gameWindow) {
-                m_gameWindow->processServerMessage(doc.object());
+                m_gameWindow->processServerMessage(doc.object()); // Pass to game window
             }
         }
     }
