@@ -4,13 +4,9 @@
 #include <QMainWindow>
 #include <QTcpSocket>
 #include <QMessageBox>
-#include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonParseError>
-#include <string>
-#include <QHostAddress>
 #include <QRegularExpression>
+#include <QHostAddress>
+#include "gamewindow.h"
 
 namespace Ui {
 class MainWindow;
@@ -21,24 +17,23 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
-    QTcpSocket* socket;
-    QByteArray Data;
-
-    QJsonDocument doc;
-    QJsonParseError docError;
-
-public slots:
-    void sockReady();
-    void sockDisc();
+    void sendJsonMessage(const QJsonObject &message);
 
 private slots:
-    void on_pushButton_clicked();
+    void on_connectButton_clicked();
+    void onReadyRead();
+    void onConnected();
+    void onDisconnected();
+    void onError(QAbstractSocket::SocketError error);
 
 private:
     Ui::MainWindow *ui;
+    QTcpSocket* m_socket;
+    QString m_playerName;
+    GameWindow* m_gameWindow = nullptr;
 };
 
 #endif // MAINWINDOW_H

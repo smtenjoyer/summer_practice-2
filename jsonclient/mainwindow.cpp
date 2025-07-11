@@ -1,15 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QJsonDocument>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    m_socket(new QTcpSocket(this))
 {
     ui->setupUi(this);
 
-    socket = new QTcpSocket(this);
-    connect(socket,SIGNAL(readyRead()),this,SLOT(sockReady()));
-    connect(socket,SIGNAL(disconnected()),this,SLOT(sockDisc()));
+    connect(m_socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(m_socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
+    connect(m_socket, &QTcpSocket::errorOccurred, this, &MainWindow::onError);
+    connect(m_socket, &QTcpSocket::connected, this, &MainWindow::onConnected);
 }
 
 MainWindow::~MainWindow()
@@ -17,9 +20,14 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pushButton_clicked()
-{
+void MainWindow::on_connectButton_clicked(){
+    QString name = ui->nameEdit->text().trimmed();
     QString IP = ui->IPLineEdit->text();
+
+    if (name.isEmpty()){
+        QMessageBox::warning(this, "Ошибка", "Введите имя игрока");
+        return;
+    }
 
     QRegularExpression ipRegex(R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)");
     if (!ipRegex.match(IP).hasMatch()) {
@@ -32,6 +40,7 @@ void MainWindow::on_pushButton_clicked()
         QMessageBox::warning(this, "Ошибка", "Неверный IP-адрес (ошибка QHostAddress).");
         return;
     }
+
 
     bool ok;
     int port = ui->portLineEdit->text().toInt(&ok);
@@ -46,36 +55,78 @@ void MainWindow::on_pushButton_clicked()
         return;
     }
 
-    socket->connectToHost(IP, port);
-    qDebug() << "Попытка подключения к " << IP << ": " << port;
+
+    m_playerName = name;
+    m_socket->connectToHost(IP, port);
+}
+
+void MainWindow::onConnected(){
+    ui->statusLabel->setText("Подключено к серверу");
+    ui->connectButton->setEnabled(false);
+
+
+    m_gameWindow = new GameWindow(m_socket, m_playerName, this);
+    m_gameWindow->show();
+
+    QJsonObject message;
+    message["type"] = "register";
+    message["name"] = m_playerName;
+    sendJsonMessage(message);
+    connect(m_gameWindow, &GameWindow::sendMessage, this, &MainWindow::sendJsonMessage);
 
 }
 
-void MainWindow::sockDisc()
+void MainWindow::onReadyRead()
 {
-    socket->deleteLater();
-}
+    static QByteArray buffer;
 
-void MainWindow::sockReady()
-{
-    if (socket->waitForConnected(500))
-    {
-        socket->waitForReadyRead(500);
-        Data = socket->readAll();
+    buffer += m_socket->readAll();
 
-        doc = QJsonDocument::fromJson(Data, &docError);
-        if (docError.errorString().toInt()==QJsonParseError::NoError)
-        {
-            if ((doc.object().value("type").toString() == "connection" ) && (doc.object().value("status").toString() == "yes" ))
-            {
-                QMessageBox::information(this, "Информация", "Соединение установлено");
-            } else {
-                QMessageBox::information(this, "Информация", "Соединение не установлено");
-            }
-        } else {
-            QMessageBox::information(this, "Информация", "Ошибки с форматом передачи данных" + docError.errorString());
+    while (buffer.contains('\n')) {
+        int pos = buffer.indexOf('\n');
+        QByteArray messageData = buffer.left(pos);
+        buffer.remove(0, pos + 1);
+
+        QJsonParseError error;
+        QJsonDocument doc = QJsonDocument::fromJson(messageData, &error);
+
+        if (error.error != QJsonParseError::NoError) {
+            qDebug() << "JSON parse error:" << error.errorString();
+            continue;
         }
 
-        qDebug()<<Data;
+        if (doc.isObject()) {
+            if (m_gameWindow) {
+                m_gameWindow->processServerMessage(doc.object());
+            }
+        }
     }
+}
+
+void MainWindow::sendJsonMessage(const QJsonObject &message){
+
+    if (m_socket->state() == QTcpSocket::ConnectedState){
+
+        QJsonDocument doc(message);
+        QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+        m_socket->write(jsonData + "\n");
+        m_socket->flush();
+    }
+}
+
+void MainWindow::onDisconnected()
+{
+    ui->statusLabel->setText("Отключено от сервера");
+    ui->connectButton->setEnabled(true);
+
+    if (m_gameWindow) {
+        m_gameWindow->close();
+        m_gameWindow->deleteLater();
+        m_gameWindow = nullptr;
+    }
+}
+
+void MainWindow::onError(QAbstractSocket::SocketError error){
+    QMessageBox::warning(this, "Ошибка подключения", m_socket->errorString());
+    onDisconnected();
 }

@@ -3,22 +3,68 @@
 
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QMap>
+#include <QTimer>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QList>
+#include <QString>
+#include <QDebug>
+#include <QJsonArray>
+#include <QRandomGenerator>
 
 class myserver: public QTcpServer
 {
     Q_OBJECT
 public:
-    myserver();
+
+    explicit myserver(QObject *parent = nullptr);
     ~myserver();
 
-    QTcpSocket* socket;
-    QByteArray Data;
+    enum GameState {
+        WaitingForPlayers,
+        Drawing,
+        RoundEnd,
+        GameEnd
+    };
 
-public slots:
     void startServer();
-    void incomingConnection(qintptr socketDescriptor);
-    void sockReady();
-    void sockDisc();
+
+private:
+    // cокеты и данные
+    QList<QTcpSocket*> m_clients;
+    QMap<QTcpSocket*, QString> m_clientNames;
+    QMap<QString, int> m_scores;
+    QByteArray m_data;
+
+    // bгровые переменные
+    GameState m_gameState;
+    int m_currentRound;
+    QString m_currentWord;
+    QString m_currentDrawer;
+    QTimer m_roundTimer;
+    QStringList m_words;
+
+    // cетевые методы
+    void sendToClient(QTcpSocket* socket, const QJsonObject& message);
+    void broadcast(const QJsonObject& message, QTcpSocket* exclude = nullptr);
+    void processMessage(const QJsonObject& message, QTcpSocket* sender);
+
+    // bгровые методы
+    void startGame();
+    void startNewRound();
+    void endRound();
+    void selectNewDrawer();
+    QString selectRandomWord();
+    void updateAllClientsGameState();
+
+protected:
+    void incomingConnection(qintptr socketDescriptor) override;
+
+private slots:
+    void onReadyRead();
+    void onDisconnected();
+    void onRoundTimerTimeout();
 };
 
 #endif // MYSERVER_H

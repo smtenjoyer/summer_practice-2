@@ -26,13 +26,16 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralwidget;
-    QPushButton *pushButton;
+    QPushButton *connectButton;
     QWidget *gridLayoutWidget;
     QGridLayout *gridLayout;
     QLabel *label_2;
-    QLineEdit *IPLineEdit;
     QLineEdit *portLineEdit;
     QLabel *label;
+    QLineEdit *IPLineEdit;
+    QLabel *label_3;
+    QLineEdit *nameEdit;
+    QLabel *statusLabel;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -43,12 +46,12 @@ public:
         MainWindow->resize(486, 391);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName("centralwidget");
-        pushButton = new QPushButton(centralwidget);
-        pushButton->setObjectName("pushButton");
-        pushButton->setGeometry(QRect(110, 260, 291, 29));
+        connectButton = new QPushButton(centralwidget);
+        connectButton->setObjectName("connectButton");
+        connectButton->setGeometry(QRect(100, 300, 291, 29));
         gridLayoutWidget = new QWidget(centralwidget);
         gridLayoutWidget->setObjectName("gridLayoutWidget");
-        gridLayoutWidget->setGeometry(QRect(20, 20, 226, 80));
+        gridLayoutWidget->setGeometry(QRect(20, 20, 226, 100));
         gridLayout = new QGridLayout(gridLayoutWidget);
         gridLayout->setObjectName("gridLayout");
         gridLayout->setContentsMargins(0, 0, 0, 0);
@@ -56,11 +59,6 @@ public:
         label_2->setObjectName("label_2");
 
         gridLayout->addWidget(label_2, 1, 0, 1, 1);
-
-        IPLineEdit = new QLineEdit(gridLayoutWidget);
-        IPLineEdit->setObjectName("IPLineEdit");
-
-        gridLayout->addWidget(IPLineEdit, 0, 1, 1, 1);
 
         portLineEdit = new QLineEdit(gridLayoutWidget);
         portLineEdit->setObjectName("portLineEdit");
@@ -72,6 +70,24 @@ public:
 
         gridLayout->addWidget(label, 0, 0, 1, 1);
 
+        IPLineEdit = new QLineEdit(gridLayoutWidget);
+        IPLineEdit->setObjectName("IPLineEdit");
+
+        gridLayout->addWidget(IPLineEdit, 0, 1, 1, 1);
+
+        label_3 = new QLabel(gridLayoutWidget);
+        label_3->setObjectName("label_3");
+
+        gridLayout->addWidget(label_3, 2, 0, 1, 1);
+
+        nameEdit = new QLineEdit(gridLayoutWidget);
+        nameEdit->setObjectName("nameEdit");
+
+        gridLayout->addWidget(nameEdit, 2, 1, 1, 1);
+
+        statusLabel = new QLabel(centralwidget);
+        statusLabel->setObjectName("statusLabel");
+        statusLabel->setGeometry(QRect(330, 20, 141, 20));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
@@ -89,9 +105,11 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        pushButton->setText(QCoreApplication::translate("MainWindow", "\320\241\320\276\320\265\320\264\320\270\320\275\320\270\321\202\321\214\321\201\321\217 \321\201 \321\201\320\265\321\200\320\262\320\265\321\200\320\276\320\274", nullptr));
+        connectButton->setText(QCoreApplication::translate("MainWindow", "\320\241\320\276\320\265\320\264\320\270\320\275\320\270\321\202\321\214\321\201\321\217 \321\201 \321\201\320\265\321\200\320\262\320\265\321\200\320\276\320\274", nullptr));
         label_2->setText(QCoreApplication::translate("MainWindow", "\320\237\320\276\321\200\321\202 \321\201\320\265\321\200\320\262\320\265\321\200\320\260:", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "IP \321\201\320\265\321\200\320\262\320\265\321\200\320\260:", nullptr));
+        label_3->setText(QCoreApplication::translate("MainWindow", "\320\235\320\270\320\272\320\275\320\265\320\271\320\274:", nullptr));
+        statusLabel->setText(QCoreApplication::translate("MainWindow", "<html><head/><body><p align=\"right\"><br/></p></body></html>", nullptr));
     } // retranslateUi
 
 };
