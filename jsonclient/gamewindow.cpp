@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QDataStream>
 #include <QDebug>
+#include <QLayout>
 
 GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent) :
     QMainWindow(parent),
@@ -24,13 +25,29 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     setupGameUI(false);
 
-    QSize newSize(800, 600);
+    QSize newSize(1121, 711);
     m_doodleArea = new DoodleArea(newSize);
     setCentralWidget(m_doodleArea);
 
     // Подключаем сигнал изменения точек рисования к отправке на сервер
     connect(m_doodleArea, &DoodleArea::drawingPointsChanged,
             this, &GameWindow::sendDrawingPoints);
+    m_doodleArea->resize(newSize);
+
+    QLayout * layout = ui->drawingAreaContainer->layout();
+    if (layout == nullptr) {
+        layout = new QVBoxLayout;
+        ui->drawingAreaContainer->setLayout(layout);
+    }
+
+    QLayoutItem *item;
+    while ((item = layout->takeAt(0)) != nullptr) {
+        delete item->widget();
+        delete item;
+    }
+
+    layout->addWidget(m_doodleArea);
+
 }
 
 GameWindow::~GameWindow()
@@ -118,6 +135,11 @@ void GameWindow::processServerMessage(const QJsonObject &message)
         // TODO: заполнение таблицы очков
     }
 }
+
+void GameWindow::setupGameUI(bool isDrawer){
+    // ui->drawingToolsWidget->setVisible(isDrawer);
+    // ui->guessWidget->setVisible(!isDrawer); !!!!!!!!!!!!!!
+    ui->blockArea->setVisible(!isDrawer);
 
 void GameWindow::setupGameUI(bool isDrawer)
 {

@@ -61,6 +61,17 @@ void MainWindow::on_connectButton_clicked(){
     m_socket->connectToHost(IP, port);
 }
 
+void MainWindow::sendJsonMessage(const QJsonObject &message){
+
+    if (m_socket->state() == QTcpSocket::ConnectedState){
+
+        QJsonDocument doc(message);
+        QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+        m_socket->write(jsonData + "\n");
+        m_socket->flush();
+    }
+}
+
 void MainWindow::onConnected(){
     ui->statusLabel->setText("Подключено к серверу");
     ui->connectButton->setEnabled(false);
@@ -100,19 +111,21 @@ void MainWindow::onReadyRead()
                 m_gameWindow->processServerMessage(doc.object()); 
             }
         }
+
+        //
+
+        if (doc.isObject()) {
+            qDebug() << "Client received:" << doc.toJson(QJsonDocument::Compact);
+            if (m_gameWindow) {
+                m_gameWindow->processServerMessage(doc.object());
+            }
+        }
     }
+
+
 }
 
-void MainWindow::sendJsonMessage(const QJsonObject &message){
 
-    if (m_socket->state() == QTcpSocket::ConnectedState){
-
-        QJsonDocument doc(message);
-        QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
-        m_socket->write(jsonData + "\n");
-        m_socket->flush();
-    }
-}
 
 void MainWindow::onDisconnected()
 {
