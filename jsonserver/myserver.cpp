@@ -144,6 +144,9 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
             }
         }
     }
+
+    //
+    qDebug() << "Server received:" << QJsonDocument(message).toJson(QJsonDocument::Compact);
 }
 
 void myserver::startGame(){

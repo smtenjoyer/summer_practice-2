@@ -1,8 +1,8 @@
-
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
 #include <QJsonDocument>
 #include "DoodleArea.h"
+#include <QLayout>
 
 GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent) :
     QMainWindow(parent),
@@ -20,9 +20,24 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     setupGameUI(false);
 
-    QSize newSize(800, 600);
+    QSize newSize(1121, 711);
     m_doodleArea = new DoodleArea(newSize);
-    setCentralWidget(m_doodleArea);
+    m_doodleArea->resize(newSize);
+
+    QLayout * layout = ui->drawingAreaContainer->layout();
+    if (layout == nullptr) {
+        layout = new QVBoxLayout;
+        ui->drawingAreaContainer->setLayout(layout);
+    }
+
+    QLayoutItem *item;
+    while ((item = layout->takeAt(0)) != nullptr) {
+        delete item->widget();
+        delete item;
+    }
+
+    layout->addWidget(m_doodleArea);
+
 }
 
 GameWindow::~GameWindow()
@@ -41,8 +56,6 @@ void GameWindow::on_sendGuessButton_clicked()
     emit sendMessage(message);
 
     QJsonDocument doc(message);
-    m_socket->write(doc.toJson());
-    m_socket->flush();
     ui->guessEdit->clear();
 }
 
@@ -90,13 +103,14 @@ void GameWindow::processServerMessage(const QJsonObject &message)
         QJsonObject scores = message["scores"].toObject();
         // ui->scoresTable->clear();
 
-        // ... заполнение таблицы очков ...
+        // ... fill the scores table ...
     }
 }
 
 void GameWindow::setupGameUI(bool isDrawer){
-    // ui->drawingWidget->setVisible(isDrawer);  !!!!!!!!!!!!!!
-    // ui->guessWidget->setVisible(!isDrawer);
+    // ui->drawingToolsWidget->setVisible(isDrawer);
+    // ui->guessWidget->setVisible(!isDrawer); !!!!!!!!!!!!!!
+    ui->blockArea->setVisible(!isDrawer);
 
     if (isDrawer){
         ui->wordLabel->setText("Ваш ход рисовать!");
@@ -117,9 +131,5 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
     QJsonObject message;
     message["type"] = "draw";
     message["points"] = pointsArray;
-
-    QJsonDocument doc(message);
-    m_socket->write(doc.toJson());
+    emit sendMessage(message);
 }
-
-

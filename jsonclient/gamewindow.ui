@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>220</x>
-      <y>650</y>
+      <y>680</y>
       <width>31</width>
       <height>29</height>
      </rect>
@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>650</y>
+      <y>680</y>
       <width>211</width>
       <height>28</height>
      </rect>
@@ -41,33 +41,48 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>0</y>
+      <y>10</y>
       <width>161</width>
       <height>271</height>
      </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::LeftToRight</enum>
     </property>
    </widget>
    <widget class="QGroupBox" name="guessWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>560</y>
+      <y>590</y>
       <width>211</width>
       <height>91</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(0, 0, 0);</string>
+    </property>
     <property name="title">
-     <string>GroupBox</string>
+     <string>чатик</string>
     </property>
    </widget>
    <widget class="QLabel" name="wordLabel">
     <property name="geometry">
      <rect>
-      <x>210</x>
+      <x>180</x>
       <y>0</y>
-      <width>681</width>
+      <width>711</width>
       <height>71</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>20</pointsize>
+      <fontweight>Black</fontweight>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(0, 0, 0);</string>
     </property>
     <property name="text">
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:20pt;&quot;&gt;TextLabel&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -76,13 +91,47 @@
    <widget class="QTextBrowser" name="chatText">
     <property name="geometry">
      <rect>
-      <x>900</x>
-      <y>0</y>
+      <x>910</x>
+      <y>10</y>
       <width>211</width>
       <height>192</height>
      </rect>
     </property>
    </widget>
+   <widget class="QWidget" name="drawingAreaContainer" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1121</width>
+      <height>711</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::RightToLeft</enum>
+    </property>
+   </widget>
+   <widget class="QWidget" name="blockArea" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1121</width>
+      <height>711</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::RightToLeft</enum>
+    </property>
+   </widget>
+   <zorder>drawingAreaContainer</zorder>
+   <zorder>blockArea</zorder>
+   <zorder>chatText</zorder>
+   <zorder>guessWidget</zorder>
+   <zorder>sendGuessButton</zorder>
+   <zorder>guessEdit</zorder>
+   <zorder>wordLabel</zorder>
+   <zorder>scoresTable</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -90,11 +139,10 @@
      <x>0</x>
      <y>0</y>
      <width>1123</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>
