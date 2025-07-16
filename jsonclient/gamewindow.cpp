@@ -136,10 +136,6 @@ void GameWindow::processServerMessage(const QJsonObject &message)
     }
 }
 
-void GameWindow::setupGameUI(bool isDrawer){
-    // ui->drawingToolsWidget->setVisible(isDrawer);
-    // ui->guessWidget->setVisible(!isDrawer); !!!!!!!!!!!!!!
-    ui->blockArea->setVisible(!isDrawer);
 
 void GameWindow::setupGameUI(bool isDrawer)
 {
