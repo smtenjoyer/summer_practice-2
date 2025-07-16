@@ -45,8 +45,10 @@ public:
     void setScaleFactor(double scaleFactor);
     double scaleFactor() const { return m_scaleFactor; }
     void drawLineTo(const QPoint &endPoint);
-
+    void drawRemotePoints(const QVector<QPoint> &points);
     int myPenWidth;
+signals:
+    void drawingPointsChanged(const QVector<QPoint> &points);
 public slots:
     void clearImage();
     void resizeCanvas();
@@ -63,7 +65,7 @@ private:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void setImageItem(QGraphicsPixmapItem *item);
-
+    QVector<QPoint> currentStrokePoints;
 
     void drawShape(const QPoint &endPoint, QImage *targetImage);
     void resizeImage(QImage *image, const QSize &newSize);

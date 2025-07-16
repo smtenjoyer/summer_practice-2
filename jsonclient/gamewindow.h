@@ -26,19 +26,21 @@ public:
 
     void setupGameUI(bool isDrawer);
 
+
 signals:
     void sendMessage(const QJsonObject& message);
 
 private slots:
     void on_sendGuessButton_clicked();
     void sendDrawingPoints(const QVector<QPoint>& points);
+    void readServerMessages();
 
 private:
     Ui::GameWindow *ui;
     QTcpSocket* m_socket;
     QString m_playerName;
     bool m_isDrawing;
-
+    void sendJson(const QJsonObject &message);
     DoodleArea *m_doodleArea = nullptr;
 
 };

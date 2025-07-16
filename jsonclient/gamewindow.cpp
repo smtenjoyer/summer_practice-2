@@ -1,8 +1,9 @@
-
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
-#include <QJsonDocument>
 #include "DoodleArea.h"
+#include <QJsonDocument>
+#include <QDataStream>
+#include <QDebug>
 
 GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent) :
     QMainWindow(parent),
@@ -18,11 +19,18 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     connect(ui->sendGuessButton, &QPushButton::clicked, this, &GameWindow::on_sendGuessButton_clicked);
 
+    // Подключаем сигнал readyRead для чтения сообщений с сервера
+    connect(m_socket, &QTcpSocket::readyRead, this, &GameWindow::readServerMessages);
+
     setupGameUI(false);
 
     QSize newSize(800, 600);
     m_doodleArea = new DoodleArea(newSize);
     setCentralWidget(m_doodleArea);
+
+    // Подключаем сигнал изменения точек рисования к отправке на сервер
+    connect(m_doodleArea, &DoodleArea::drawingPointsChanged,
+            this, &GameWindow::sendDrawingPoints);
 }
 
 GameWindow::~GameWindow()
@@ -30,20 +38,36 @@ GameWindow::~GameWindow()
     delete ui;
 }
 
-void GameWindow::on_sendGuessButton_clicked()
+void GameWindow::readServerMessages()
 {
-    QString guess = ui->guessEdit->text().trimmed();
-    if (guess.isEmpty()) return;
+    static quint32 blockSize = 0;
+    QDataStream in(m_socket);
+    in.setVersion(QDataStream::Qt_6_0);
 
-    QJsonObject message;
-    message["type"] = "guess";
-    message["text"] = guess;
-    emit sendMessage(message);
+    while (true) {
+        if (blockSize == 0) {
+            if (m_socket->bytesAvailable() < (int)sizeof(quint32))
+                return;
+            in >> blockSize;
+        }
+        if (m_socket->bytesAvailable() < blockSize)
+            return;
 
-    QJsonDocument doc(message);
-    m_socket->write(doc.toJson());
-    m_socket->flush();
-    ui->guessEdit->clear();
+        QByteArray jsonData;
+        jsonData.resize(blockSize);
+        in.readRawData(jsonData.data(), blockSize);
+
+        blockSize = 0;
+
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(jsonData, &parseError);
+        if (parseError.error != QJsonParseError::NoError) {
+            qWarning() << "JSON parse error:" << parseError.errorString();
+            return;
+        }
+
+        processServerMessage(doc.object());
+    }
 }
 
 void GameWindow::processServerMessage(const QJsonObject &message)
@@ -60,10 +84,8 @@ void GameWindow::processServerMessage(const QJsonObject &message)
         if (isDrawer) {
             QString word = message["word"].toString();
             ui->wordLabel->setText("Нарисуй-ка мне " + word);
-
         } else {
             ui->wordLabel->setText("Что рисует " + drawer + "?");
-
         }
     } else if (type == "draw") {
         if (!m_isDrawing) {
@@ -73,6 +95,11 @@ void GameWindow::processServerMessage(const QJsonObject &message)
             for (const QJsonValue& val : pointsArray) {
                 QJsonObject pointObj = val.toObject();
                 points.append(QPoint(pointObj["x"].toInt(), pointObj["y"].toInt()));
+            }
+
+            // Передать точки для отрисовки на canvas
+            if (m_doodleArea) {
+                m_doodleArea->drawRemotePoints(points);
             }
         }
     }
@@ -88,20 +115,20 @@ void GameWindow::processServerMessage(const QJsonObject &message)
 
         // Обновление таблицы очков
         QJsonObject scores = message["scores"].toObject();
-        // ui->scoresTable->clear();
-
-        // ... заполнение таблицы очков ...
+        // TODO: заполнение таблицы очков
     }
 }
 
-void GameWindow::setupGameUI(bool isDrawer){
-    // ui->drawingWidget->setVisible(isDrawer);  !!!!!!!!!!!!!!
-    // ui->guessWidget->setVisible(!isDrawer);
-
+void GameWindow::setupGameUI(bool isDrawer)
+{
     if (isDrawer){
         ui->wordLabel->setText("Ваш ход рисовать!");
+        ui->sendGuessButton->setEnabled(false);
+        ui->guessEdit->setEnabled(false);
     } else {
         ui->wordLabel->setText("Угадывайте что рисуют!");
+        ui->sendGuessButton->setEnabled(true);
+        ui->guessEdit->setEnabled(true);
     }
 }
 
@@ -118,8 +145,32 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
     message["type"] = "draw";
     message["points"] = pointsArray;
 
-    QJsonDocument doc(message);
-    m_socket->write(doc.toJson());
+    sendJson(message);
 }
 
+void GameWindow::sendJson(const QJsonObject &message)
+{
+    QByteArray jsonData = QJsonDocument(message).toJson(QJsonDocument::Compact);
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_6_0);
+    out << (quint32)jsonData.size();
+    block.append(jsonData);
 
+    m_socket->write(block);
+    m_socket->flush();
+}
+
+void GameWindow::on_sendGuessButton_clicked()
+{
+    QString guess = ui->guessEdit->text().trimmed();
+    if (guess.isEmpty()) return;
+
+    QJsonObject message;
+    message["type"] = "guess";
+    message["text"] = guess;
+    message["player"] = m_playerName;
+
+    sendJson(message);
+    ui->guessEdit->clear();
+}

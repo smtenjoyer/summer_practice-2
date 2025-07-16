@@ -236,6 +236,20 @@ void DoodleArea::drawLineTo(const QPoint &endPoint){
     int rad = (myPenWidth / 2) + 2;
     update(QRect(lastPoint, endPoint).normalized().adjusted(-rad, -rad, +rad, +rad));
     lastPoint = endPoint;
+    currentStrokePoints.append(endPoint);  // Накопление точек текущего штриха
+    emit drawingPointsChanged(currentStrokePoints);
+}
+void DoodleArea::drawRemotePoints(const QVector<QPoint> &points)
+{
+    if (points.isEmpty()) return;
+
+    QPainter painter(&image);
+    painter.setPen(QPen(Qt::black, myPenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+
+    for (int i = 1; i < points.size(); ++i) {
+        painter.drawLine(points[i-1], points[i]);
+    }
+    update();
 }
 
 QImage DoodleArea::getImage() const {
