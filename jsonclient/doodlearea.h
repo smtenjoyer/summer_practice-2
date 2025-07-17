@@ -47,7 +47,14 @@ public:
     void drawLineTo(const QPoint &endPoint);
 
     int myPenWidth;
+//Работает Киря, не прикасаться
+signals:
+    void drawingCommandGenerated(const QJsonObject& command);
+//
 public slots:
+    //Работает Киря, не прикасаться
+    void applyRemoteCommand(const QJsonObject& command);
+    //
     void clearImage();
     void resizeCanvas();
 
@@ -55,6 +62,7 @@ public slots:
     void redo();
 
 private:
+
     void mousePressEvent(QMouseEvent *event) override;
     void finishTextInput();
 
@@ -96,6 +104,13 @@ private:
     double m_scaleFactor = 1.0;
     QPoint m_offset;
     QPoint m_lastMousePosition;
+    // Работает Киря не прикосаться
+    void setupRemotePainter(QPainter &painter);
+    QPoint lastRemotePoint;  // Для отслеживания последней точки при удаленном рисовании
+    QColor remotePenColor;   // Цвет пера для удаленных команд
+    int remotePenWidth;      // Ширина пера для удаленных команд
+    ShapeType remoteTool;    // Инструмент для удаленных команд
+    //
 };
 
 #endif // DOODLEAREA_H

@@ -38,6 +38,20 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     layout->addWidget(m_doodleArea);
 
+    //Работает Киря не прикасаться
+    // Новые соединения
+    connect(this, &GameWindow::sendDrawingCommand, this, [this](const QJsonObject& cmd) {
+        if (m_isDrawing) {
+            QJsonObject message = cmd;
+            message["type"] = "draw";
+            emit sendMessage(message);
+        }
+    });
+
+    connect(m_doodleArea, &DoodleArea::drawingCommandGenerated,
+            this, &GameWindow::sendDrawingCommand);
+    //
+
 }
 
 GameWindow::~GameWindow()
@@ -61,6 +75,7 @@ void GameWindow::on_sendGuessButton_clicked()
 
 void GameWindow::processServerMessage(const QJsonObject &message)
 {
+    qDebug() << "Received message:" << message;
     QString type = message["type"].toString();
 
     if (type == "roundStart") {
@@ -79,7 +94,12 @@ void GameWindow::processServerMessage(const QJsonObject &message)
 
         }
     } else if (type == "draw") {
+        //Работает Киря не прикасаться
+        QJsonObject drawCmd = message;
+        drawCmd.remove("type"); // Удаляем тип сообщения, оставляем только команду
+
         if (!m_isDrawing) {
+            m_doodleArea->applyRemoteCommand(drawCmd);
             QJsonArray pointsArray = message["points"].toArray();
             QVector<QPoint> points;
 
@@ -133,3 +153,5 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
     message["points"] = pointsArray;
     emit sendMessage(message);
 }
+
+

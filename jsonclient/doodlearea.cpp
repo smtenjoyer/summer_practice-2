@@ -13,7 +13,12 @@ DoodleArea::DoodleArea(QWidget *parent) : QWidget(parent) {
     textInputStartPoint = QPoint(0, 0);
     textFont = QFont("Arial", 12);
     textColor = Qt::black;
-
+    //работает Киря не прокосаться
+    lastRemotePoint = QPoint(0, 0);
+    remotePenColor = Qt::black;
+    remotePenWidth = 1;
+    remoteTool = Pencil;
+    //
 }
 
 DoodleArea::DoodleArea(const QSize& size, QWidget *parent) : QWidget(parent) {
@@ -31,6 +36,12 @@ DoodleArea::DoodleArea(const QSize& size, QWidget *parent) : QWidget(parent) {
     textInputStartPoint = QPoint(0, 0);
     textFont = QFont("Arial", 12);
     textColor = Qt::black;
+    //работает Киря не прокосаться
+    lastRemotePoint = QPoint(0, 0);
+    remotePenColor = Qt::black;
+    remotePenWidth = 1;
+    remoteTool = Pencil;
+    //
 
 }
 
@@ -90,6 +101,17 @@ void DoodleArea::mousePressEvent(QMouseEvent *event){
             fillArea(event->pos()); // Добавляем команду в стек undo после заливки
             DrawShapeCommand *fillCommand = new DrawShapeCommand(this, event->pos(), event->pos(), currentTool, myPenColor, myPenWidth, oldImage, image.copy());
             undoStack->push(fillCommand);
+
+            //Работает Киря не прикасаться
+            QJsonObject cmd;
+            cmd["type"] = "draw";
+            cmd["tool"] = "fill";
+            cmd["x"] = event->pos().x();
+            cmd["y"] = event->pos().y();
+            cmd["color"] = myPenColor.name();
+            emit drawingCommandGenerated(cmd);
+            //
+
         } else if (currentTool == Pencil
                    ||currentTool == Rubber
                    || currentTool == Rectangle
@@ -98,6 +120,17 @@ void DoodleArea::mousePressEvent(QMouseEvent *event){
             lastPoint = event->pos();
             doodling = true;
             oldImage = image.copy();
+
+            //Работает Киря не прикасаться
+            QJsonObject cmd;
+            cmd["type"] = "draw_start";
+            cmd["x"] = event->pos().x();
+            cmd["y"] = event->pos().y();
+            cmd["tool"] = currentTool;
+            cmd["color"] = myPenColor.name();
+            cmd["width"] = myPenWidth;
+            emit drawingCommandGenerated(cmd);
+            //
         }
         else if (currentTool == Textt){
             if (isTextInputActive) {
@@ -140,6 +173,18 @@ void DoodleArea::finishTextInput() {
 }
 
 void DoodleArea::mouseMoveEvent(QMouseEvent *event) {
+    static int counter = 0;
+    const int SAMPLE_RATE = 3; // Отправлять каждую 3-ю точку
+    if (doodling && (currentTool == Pencil || currentTool == Rubber)) {
+        counter++;
+        if (counter % SAMPLE_RATE == 0) {
+            QJsonObject cmd;
+            cmd["type"] = "draw_point";
+            cmd["x"] = event->pos().x();
+            cmd["y"] = event->pos().y();
+            emit drawingCommandGenerated(cmd);
+        }
+
     if (doodling) {
         QPoint endPoint = event->pos();
         if (currentTool == Pencil || currentTool == Rubber) {
@@ -150,7 +195,9 @@ void DoodleArea::mouseMoveEvent(QMouseEvent *event) {
             update();
         }
     }
+    }
 }
+
 
 void DoodleArea::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton && doodling) {
@@ -235,6 +282,15 @@ void DoodleArea::drawLineTo(const QPoint &endPoint){
     modified = true;
     int rad = (myPenWidth / 2) + 2;
     update(QRect(lastPoint, endPoint).normalized().adjusted(-rad, -rad, +rad, +rad));
+    //Работает Киря не прокасаться
+    QJsonObject cmd;
+    cmd["type"] = "draw_line";
+    cmd["x1"] = lastPoint.x();
+    cmd["y1"] = lastPoint.y();
+    cmd["x2"] = endPoint.x();
+    cmd["y2"] = endPoint.y();
+    emit drawingCommandGenerated(cmd);
+    //
     lastPoint = endPoint;
 }
 
@@ -383,14 +439,58 @@ void DoodleArea::drawShape(const QPoint &endPoint, QImage *targetImage) {
 QUndoStack* DoodleArea::getUndoStack() const {
     return undoStack;
 }
+//Работае Киря не прикосаться
+// Новая функция для применения удаленных команд
+void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
+    QString type = command["type"].toString();
 
+    if (type == "draw_start") {
+        // Сохраняем начальную точку и параметры рисования
+        lastRemotePoint = QPoint(command["x"].toInt(), command["y"].toInt());
+        remotePenColor = QColor(command["color"].toString());
+        remotePenWidth = command["width"].toInt();
+        remoteTool = static_cast<ShapeType>(command["toolType"].toInt());
+    }
+    else if (type == "draw_line") {
+        // Обработка линии
+        QPoint p1(command["x1"].toInt(), command["y1"].toInt());
+        QPoint p2(command["x2"].toInt(), command["y2"].toInt());
 
+        QPainter painter(&image);
+        setupRemotePainter(painter);
+        painter.drawLine(p1, p2);
+        update();
+    }
+    else if (type == "fill") {
+        // Обработка заливки
+        QPoint pos(command["x"].toInt(), command["y"].toInt());
+        QColor color(command["color"].toString());
 
+        QColor origColor = myPenColor;
+        myPenColor = color;
+        fillArea(pos);
+        myPenColor = origColor;
+        update();
+    }
+    else if (type == "draw_point") {
+        // Обработка отдельных точек (для движения мыши)
+        QPoint p(command["x"].toInt(), command["y"].toInt());
 
-
-
-
-
-
-
-
+        QPainter painter(&image);
+        setupRemotePainter(painter);
+        painter.drawLine(lastRemotePoint, p);
+        lastRemotePoint = p;
+        update();
+    }
+    else if (type == "clear") {
+        // Очистка холста
+        clearImage();
+    }
+}
+void DoodleArea::setupRemotePainter(QPainter &painter) {
+    if (remoteTool == Rubber) {
+        painter.setPen(QPen(Qt::white, remotePenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    } else {
+        painter.setPen(QPen(remotePenColor, remotePenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    }
+}

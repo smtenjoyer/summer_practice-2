@@ -45,6 +45,10 @@ private:
     QTimer m_roundTimer;
     QStringList m_words;
 
+    //для смены ролей
+    QMap<QTcpSocket*, bool> clients;  // true = художник, false = наблюдатель
+
+    void assignRoles();
     // cетевые методы
     void sendToClient(QTcpSocket* socket, const QJsonObject& message);
     void broadcast(const QJsonObject& message, QTcpSocket* exclude = nullptr);

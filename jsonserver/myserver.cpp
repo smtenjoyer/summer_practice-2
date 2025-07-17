@@ -236,8 +236,15 @@ void myserver::broadcast(const QJsonObject& message, QTcpSocket *exclude){
     }
 }
 
+//Для смены ролей from Kirya
 
-
+void myserver::assignRoles() {
+    if (clients.size() == 1) {
+        clients[clients.keys().first()] = true; // Первый — художник
+    } else {
+        clients[clients.keys().last()] = false; // Остальные — наблюдатели
+    }
+}
 
 
 

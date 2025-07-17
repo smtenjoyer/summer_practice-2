@@ -28,10 +28,13 @@ public:
 
 signals:
     void sendMessage(const QJsonObject& message);
-
+    //работает Киря не прокосаться
+    void sendDrawingCommand(const QJsonObject& command);
+    //
 private slots:
     void on_sendGuessButton_clicked();
     void sendDrawingPoints(const QVector<QPoint>& points);
+
 
 private:
     Ui::GameWindow *ui;
