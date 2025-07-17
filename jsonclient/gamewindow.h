@@ -22,7 +22,7 @@ public:
     explicit GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent = nullptr);
     ~GameWindow() override;
 
-    void processServerMessage(const QJsonObject &message);
+
 
     void setupGameUI(bool isDrawer);
 
@@ -34,6 +34,9 @@ signals:
 private slots:
     void on_sendGuessButton_clicked();
     void sendDrawingPoints(const QVector<QPoint>& points);
+    //Киря
+public slots:
+    void processServerMessage(const QJsonObject &message);
 
 
 private:

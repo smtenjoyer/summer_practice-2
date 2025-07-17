@@ -85,6 +85,9 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
 
     QString type = message["type"].toString();
 
+    QString senderName = m_clientNames.value(sender, "");
+    qDebug() << "Message from" << senderName << ":" << message;
+
     if (type == "register"){
 
         QString name = message["name"].toString();
@@ -105,15 +108,20 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
         }
     } else if (type == "draw") {
 
-        if (m_gameState == Drawing && m_clientNames[sender] == m_currentDrawer){
-            broadcast(message, sender);
+        // if (m_gameState == Drawing && m_clientNames[sender] == m_currentDrawer){
+        //     broadcast(message, sender);
+        // }
+
+        if (m_gameState == Drawing && senderName == m_currentDrawer) {
+            broadcast(message); // Пересылаем всем клиентам
+            qDebug() << "Broadcasting draw command from" << senderName;
         }
     } else if (type == "guess") {
         // Обработка предположения
-        if (m_gameState == Drawing && m_clientNames[sender] != m_currentDrawer) {
-            QString guess = message["text"].toString();
+        if (m_gameState == Drawing && senderName != m_currentDrawer) {
+            QString guess = message["text"].toString().toLower();
 
-            if (guess.compare(m_currentWord, Qt::CaseInsensitive) == 0) {
+            if (guess == m_currentWord.toLower()) {
                 // Правильный ответ
                 QString guesser = m_clientNames[sender];
                 m_scores[guesser] += 10;

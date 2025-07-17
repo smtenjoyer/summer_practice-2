@@ -51,7 +51,7 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
     connect(m_doodleArea, &DoodleArea::drawingCommandGenerated,
             this, &GameWindow::sendDrawingCommand);
     //
-
+    qDebug() << "Player:" << m_playerName << "isDrawing:" << m_isDrawing;
 }
 
 GameWindow::~GameWindow()
@@ -73,7 +73,7 @@ void GameWindow::on_sendGuessButton_clicked()
     ui->guessEdit->clear();
 }
 
-void GameWindow::processServerMessage(const QJsonObject &message)
+/*void GameWindow::processServerMessage(const QJsonObject &message)
 {
     qDebug() << "Received message:" << message;
     QString type = message["type"].toString();
@@ -124,6 +124,37 @@ void GameWindow::processServerMessage(const QJsonObject &message)
         // ui->scoresTable->clear();
 
         // ... fill the scores table ...
+    }
+}*/
+void GameWindow::processServerMessage(const QJsonObject &message) {
+    QString type = message["type"].toString();
+
+    if (type == "roundStart") {
+        QString drawer = message["drawer"].toString();
+        m_isDrawing = (drawer == m_playerName);
+        setupGameUI(m_isDrawing);
+
+        if (m_isDrawing) {
+            QString word = message["word"].toString();
+            ui->wordLabel->setText("Нарисуй: " + word);
+        } else {
+            ui->wordLabel->setText("Угадай что рисует " + drawer);
+        }
+    }
+    else if (type == "draw") {
+        if (!m_isDrawing) { // Только если мы не художник
+            m_doodleArea->applyRemoteCommand(message);
+        }
+    }
+    else if (type == "chat") {
+        QString player = message["player"].toString();
+        QString text = message["text"].toString();
+        ui->chatText->append(player + ": " + text);
+    }
+    else if (type == "correctGuess") {
+        QString guesser = message["guesser"].toString();
+        QString word = message["word"].toString();
+        ui->chatText->append("✓ " + guesser + " угадал: " + word);
     }
 }
 
