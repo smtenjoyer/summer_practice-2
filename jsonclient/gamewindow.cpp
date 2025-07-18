@@ -128,21 +128,36 @@ void GameWindow::on_sendGuessButton_clicked()
 }*/
 void GameWindow::processServerMessage(const QJsonObject &message) {
     QString type = message["type"].toString();
+    qDebug() << "Processing message type:" << type;  // Логирование для отладки
 
     if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
         m_isDrawing = (drawer == m_playerName);
         setupGameUI(m_isDrawing);
 
+        // Очищаем холст ВСЕГДА при смене раунда
+        m_doodleArea->clearImage();
+
         if (m_isDrawing) {
-            QString word = message["word"].toString();
-            ui->wordLabel->setText("Нарисуй: " + word);
+            // Художник получает слово через отдельное сообщение "yourTurn"
+            ui->wordLabel->setText("Ваш ход рисовать!");
         } else {
-            ui->wordLabel->setText("Угадай что рисует " + drawer);
+            ui->wordLabel->setText("Угадайте что рисует " + drawer);
+        }
+    }
+    else if (type == "yourTurn") {  // Новый обработчик для сообщения с словом
+        if (message.contains("word")) {
+            QString word = message["word"].toString();
+            ui->wordLabel->setText("Рисуйте: " + word);
+            qDebug() << "Received word to draw:" << word;
         }
     }
     else if (type == "draw") {
-        if (!m_isDrawing) { // Только если мы не художник
+        // Принимаем команды рисования если:
+        // 1. Мы не художник ИЛИ
+        // 2. Это команда очистки (tool == "clear")
+        if (!m_isDrawing || message["tool"] == "clear") {
+            qDebug() << "Applying draw command, isDrawing:" << m_isDrawing;
             m_doodleArea->applyRemoteCommand(message);
         }
     }
@@ -155,6 +170,12 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         QString guesser = message["guesser"].toString();
         QString word = message["word"].toString();
         ui->chatText->append("✓ " + guesser + " угадал: " + word);
+
+        // Автоматически очищаем поле ввода
+        ui->guessEdit->clear();
+    }
+    else {
+        qDebug() << "Unknown message type:" << type;
     }
 }
 

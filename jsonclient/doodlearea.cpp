@@ -499,7 +499,12 @@ QUndoStack* DoodleArea::getUndoStack() const {
 // Новая функция для применения удаленных команд
 void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
     QString tool = command["tool"].toString();
-    QString action = command.contains("action") ? command["action"].toString() : "";
+
+    if (tool == "clear") {
+        image.fill(Qt::white);
+        update();
+        return;
+    }
 
     QPainter painter(&image);
     QColor color = QColor(command["color"].toString());
@@ -510,14 +515,15 @@ void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
 
         painter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
-        if (action == "start") {
-            lastRemotePoint = QPoint(command["x"].toInt(), command["y"].toInt());
-        }
-        else if (action == "move") {
+        if (command.contains("x1")) {
+            // Линия (движение)
             QPoint p1(command["x1"].toInt(), command["y1"].toInt());
             QPoint p2(command["x2"].toInt(), command["y2"].toInt());
             painter.drawLine(p1, p2);
-            lastRemotePoint = p2;
+        } else {
+            // Точка (начало)
+            QPoint p(command["x"].toInt(), command["y"].toInt());
+            painter.drawPoint(p);
         }
     }
     else if (tool == "fill") {
@@ -531,7 +537,7 @@ void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
         painter.drawRect(QRect(
             QPoint(command["x1"].toInt(), command["y1"].toInt()),
             QPoint(command["x2"].toInt(), command["y2"].toInt())
-            ));
+        ));
     }
     else if (tool == "ellipse") {
         painter.setPen(QPen(color, width));
@@ -545,7 +551,7 @@ void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
         painter.drawLine(
             QPoint(command["x1"].toInt(), command["y1"].toInt()),
             QPoint(command["x2"].toInt(), command["y2"].toInt())
-            );
+        );
     }
 
     update();

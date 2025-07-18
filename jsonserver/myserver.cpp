@@ -39,6 +39,14 @@ void myserver::incomingConnection(qintptr socketDescriptor)
     m_clients.append(socket);
 
     qDebug()<<socketDescriptor<<" Client connected";
+
+    // Если игра уже идет, отправляем новому клиенту историю рисования
+    if (m_gameState == Drawing && !m_drawingHistory.isEmpty()) {
+        qDebug() << "Sending drawing history to new client";
+        for (const QJsonObject& cmd : m_drawingHistory) {
+            sendToClient(socket, cmd);
+        }
+    }
 }
 
 void myserver::onReadyRead()
@@ -80,22 +88,19 @@ void myserver::onDisconnected()
 
     qDebug()<<"Client disconnect";
 }
-
-void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
-
+void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
     QString type = message["type"].toString();
-
     QString senderName = m_clientNames.value(sender, "");
     qDebug() << "Message from" << senderName << ":" << message;
 
-    if (type == "register"){
-
+    if (type == "register") {
         QString name = message["name"].toString();
         m_clientNames[sender] = name;
         m_scores[name] = 0;
+
         QJsonObject response;
         response["type"] = "registered";
-        response["sucsess"] = true;
+        response["success"] = true;  // Исправлено опечатку (sucsess -> success)
         sendToClient(sender, response);
 
         QJsonObject playerJoined;
@@ -103,27 +108,40 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
         playerJoined["name"] = name;
         broadcast(playerJoined, sender);
 
-        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2){
+        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2) {
             startGame();
         }
-    } else if (type == "draw") {
-
-        // if (m_gameState == Drawing && m_clientNames[sender] == m_currentDrawer){
-        //     broadcast(message, sender);
-        // }
-
+    }
+    else if (type == "draw") {
         if (m_gameState == Drawing && senderName == m_currentDrawer) {
-            broadcast(message); // Пересылаем всем клиентам
-            qDebug() << "Broadcasting draw command from" << senderName;
+            // Сохраняем команду в историю и рассылаем
+            m_drawingHistory.append(message);
+            broadcast(message);
+            qDebug() << "Draw command added to history. Total:" << m_drawingHistory.size();
+
+            // Оптимизация: если история слишком большая, удаляем старые команды
+            if (m_drawingHistory.size() > 100) {
+                m_drawingHistory.removeFirst();
+                qDebug() << "Trimmed drawing history";
+            }
         }
-    } else if (type == "guess") {
-        // Обработка предположения
+        else {
+            qDebug() << "Draw command rejected. State:" << m_gameState
+                     << "Is drawer:" << (senderName == m_currentDrawer);
+        }
+    }
+    else if (type == "guess") {
         if (m_gameState == Drawing && senderName != m_currentDrawer) {
-            QString guess = message["text"].toString().toLower();
+            QString guess = message["text"].toString().trimmed().toLower();
+
+            if (guess.isEmpty()) {
+                qDebug() << "Empty guess from" << senderName;
+                return;
+            }
 
             if (guess == m_currentWord.toLower()) {
                 // Правильный ответ
-                QString guesser = m_clientNames[sender];
+                QString guesser = senderName;
                 m_scores[guesser] += 10;
                 m_scores[m_currentDrawer] += 5;
 
@@ -131,8 +149,9 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
                 correctGuess["type"] = "correctGuess";
                 correctGuess["guesser"] = guesser;
                 correctGuess["word"] = m_currentWord;
+                correctGuess["drawer"] = m_currentDrawer;  // Добавлено для информации
 
-                // Создаем QJsonObject с очками
+                // Формируем обновленные очки
                 QJsonObject scoresObject;
                 for (auto it = m_scores.begin(); it != m_scores.end(); ++it) {
                     scoresObject[it.key()] = it.value();
@@ -140,21 +159,21 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender){
                 correctGuess["scores"] = scoresObject;
 
                 broadcast(correctGuess);
-
                 endRound();
-            } else {
-                // Неправильный ответ - пересылаем в чат
+            }
+            else {
+                // Неправильный ответ
                 QJsonObject chatMessage;
                 chatMessage["type"] = "chat";
-                chatMessage["player"] = m_clientNames[sender];
-                chatMessage["text"] = guess;
+                chatMessage["player"] = senderName;
+                chatMessage["text"] = message["text"].toString();  // Оригинальный текст (без toLower)
                 broadcast(chatMessage);
             }
         }
     }
-
-    //
-    qDebug() << "Server received:" << QJsonDocument(message).toJson(QJsonDocument::Compact);
+    else {
+        qDebug() << "Unknown message type received:" << type;
+    }
 }
 
 void myserver::startGame(){
@@ -163,10 +182,14 @@ void myserver::startGame(){
     startNewRound();
 }
 
-void myserver::startNewRound() {
+/*void myserver::startNewRound() {
 
     selectNewDrawer();
     m_currentWord = selectRandomWord();
+
+    //Киря работает
+    // Очищаем историю рисования при смене раунда
+    m_drawingHistory.clear();
 
     QTcpSocket* drawerSocket = m_clientNames.key(m_currentDrawer);
 
@@ -185,6 +208,40 @@ void myserver::startNewRound() {
     broadcast(roundStart);
 
     m_roundTimer.start(60000);
+}*/
+
+void myserver::startNewRound() {
+    // Очищаем предыдущее состояние
+    if (!m_drawingHistory.isEmpty()) {
+        m_drawingHistory.clear();
+        qDebug() << "Cleared drawing history for new round";
+    }
+    selectNewDrawer();
+    m_currentWord = selectRandomWord();
+
+    // Отправляем слово только художнику
+    QTcpSocket* drawerSocket = m_clientNames.key(m_currentDrawer);
+    if (drawerSocket) {
+        QJsonObject drawerMsg;
+        drawerMsg["type"] = "yourTurn";
+        drawerMsg["word"] = m_currentWord;
+        sendToClient(drawerSocket, drawerMsg);
+    }
+
+    // Уведомляем всех о начале раунда
+    QJsonObject roundStart;
+    roundStart["type"] = "roundStart";
+    roundStart["drawer"] = m_currentDrawer;
+    roundStart["round"] = ++m_currentRound;
+    broadcast(roundStart);
+
+    // Отправляем команду очистки всем
+    QJsonObject clearCmd;
+    clearCmd["type"] = "draw";
+    clearCmd["tool"] = "clear";
+    broadcast(clearCmd);
+
+    m_roundTimer.start(60000); // 60 секунд на раунд
 }
 
 void myserver::endRound() {

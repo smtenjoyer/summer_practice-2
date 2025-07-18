@@ -47,6 +47,7 @@ private:
 
     //для смены ролей
     QMap<QTcpSocket*, bool> clients;  // true = художник, false = наблюдатель
+    QList<QJsonObject> m_drawingHistory;
 
     void assignRoles();
     // cетевые методы
@@ -61,9 +62,13 @@ private:
     void selectNewDrawer();
     QString selectRandomWord();
     void updateAllClientsGameState();
-
+//
+signals:
+    void roundStarted(const QString &drawerName);
+//
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
+
 
 private slots:
     void onReadyRead();
