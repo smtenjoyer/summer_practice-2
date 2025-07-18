@@ -112,21 +112,14 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
             startGame();
         }
     }
-    else if (type == "draw") {
-        if (m_gameState == Drawing && senderName == m_currentDrawer) {
-            // Сохраняем команду в историю и рассылаем
+    else if(type == "draw") {
+        if (m_isRoundActive && senderName == m_currentDrawer) {
             m_drawingHistory.append(message);
             broadcast(message);
-            qDebug() << "Draw command added to history. Total:" << m_drawingHistory.size();
-
-            // Оптимизация: если история слишком большая, удаляем старые команды
-            if (m_drawingHistory.size() > 100) {
-                m_drawingHistory.removeFirst();
-                qDebug() << "Trimmed drawing history";
-            }
+            qDebug() << "Draw command from" << senderName << "in round" << m_currentRound;
         }
         else {
-            qDebug() << "Draw command rejected. State:" << m_gameState
+            qDebug() << "Draw command rejected. Round active:" << m_isRoundActive
                      << "Is drawer:" << (senderName == m_currentDrawer);
         }
     }
@@ -178,6 +171,7 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
 
 void myserver::startGame(){
     m_gameState = Drawing;
+    m_isRoundActive = true;
     m_currentRound = 1;
     startNewRound();
 }
@@ -211,11 +205,9 @@ void myserver::startGame(){
 }*/
 
 void myserver::startNewRound() {
-    // Очищаем предыдущее состояние
-    if (!m_drawingHistory.isEmpty()) {
-        m_drawingHistory.clear();
-        qDebug() << "Cleared drawing history for new round";
-    }
+    m_isRoundActive = true; // Раунд активен
+    m_drawingHistory.clear();
+
     selectNewDrawer();
     m_currentWord = selectRandomWord();
 
@@ -232,19 +224,21 @@ void myserver::startNewRound() {
     QJsonObject roundStart;
     roundStart["type"] = "roundStart";
     roundStart["drawer"] = m_currentDrawer;
-    roundStart["round"] = ++m_currentRound;
+    roundStart["round"] = m_currentRound;
     broadcast(roundStart);
 
-    // Отправляем команду очистки всем
+    // Явная команда очистки всем
     QJsonObject clearCmd;
     clearCmd["type"] = "draw";
     clearCmd["tool"] = "clear";
     broadcast(clearCmd);
 
-    m_roundTimer.start(60000); // 60 секунд на раунд
+    m_roundTimer.start(60000);
 }
 
+
 void myserver::endRound() {
+    m_isRoundActive = false; // Раунд завершен
     m_roundTimer.stop();
     m_gameState = RoundEnd;
 
@@ -255,7 +249,6 @@ void myserver::endRound() {
     for (auto it = m_scores.begin(); it != m_scores.end(); ++it) {
         scoresObject[it.key()] = it.value();
     }
-
     roundEnd["scores"] = scoresObject;
     broadcast(roundEnd);
 

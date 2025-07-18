@@ -48,6 +48,7 @@ private:
     //для смены ролей
     QMap<QTcpSocket*, bool> clients;  // true = художник, false = наблюдатель
     QList<QJsonObject> m_drawingHistory;
+    bool m_isRoundActive; // Флаг активности раунда
 
     void assignRoles();
     // cетевые методы

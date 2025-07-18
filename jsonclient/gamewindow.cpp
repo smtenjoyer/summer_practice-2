@@ -133,31 +133,25 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
     if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
         m_isDrawing = (drawer == m_playerName);
-        setupGameUI(m_isDrawing);
 
-        // Очищаем холст ВСЕГДА при смене раунда
+        // Всегда очищаем холст при начале раунда
         m_doodleArea->clearImage();
 
+        setupGameUI(m_isDrawing);
+
         if (m_isDrawing) {
-            // Художник получает слово через отдельное сообщение "yourTurn"
             ui->wordLabel->setText("Ваш ход рисовать!");
         } else {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
         }
     }
-    else if (type == "yourTurn") {  // Новый обработчик для сообщения с словом
-        if (message.contains("word")) {
-            QString word = message["word"].toString();
-            ui->wordLabel->setText("Рисуйте: " + word);
-            qDebug() << "Received word to draw:" << word;
-        }
+    else if (type == "yourTurn") {
+        QString word = message["word"].toString();
+        ui->wordLabel->setText("Рисуйте: " + word);
     }
     else if (type == "draw") {
-        // Принимаем команды рисования если:
-        // 1. Мы не художник ИЛИ
-        // 2. Это команда очистки (tool == "clear")
+        // Принимаем все команды, кроме случаев когда мы художник И это не команда очистки
         if (!m_isDrawing || message["tool"] == "clear") {
-            qDebug() << "Applying draw command, isDrawing:" << m_isDrawing;
             m_doodleArea->applyRemoteCommand(message);
         }
     }
