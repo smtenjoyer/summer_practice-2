@@ -171,13 +171,13 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
 
         setupGameUI(m_isDrawing);
 
-        if (m_isDrawing) {
+        if (!m_isDrawing) {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
         }
     }
     else if (type == "yourTurn") {
         QString word = message["word"].toString();
-        ui->wordLabel->setText("Рисуйте: " + word);
+        ui->wordLabel->setText("Нарисуй-ка мне " + word);
     }
     else if (type == "draw") {
         // Принимаем все команды, кроме случаев когда мы художник И это не команда очистки
