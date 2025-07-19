@@ -73,60 +73,6 @@ void GameWindow::on_sendGuessButton_clicked()
     ui->guessEdit->clear();
 }
 
-/*void GameWindow::processServerMessage(const QJsonObject &message)
-{
-    qDebug() << "Received message:" << message;
-    QString type = message["type"].toString();
-
-    if (type == "roundStart") {
-        QString drawer = message["drawer"].toString();
-        bool isDrawer = (drawer == m_playerName);
-
-        m_isDrawing = isDrawer;
-        setupGameUI(isDrawer);
-
-        if (isDrawer) {
-            QString word = message["word"].toString();
-            ui->wordLabel->setText("Нарисуй-ка мне " + word);
-
-        } else {
-            ui->wordLabel->setText("Что рисует " + drawer + "?");
-
-        }
-    } else if (type == "draw") {
-        //Работает Киря не прикасаться
-        QJsonObject drawCmd = message;
-        drawCmd.remove("type"); // Удаляем тип сообщения, оставляем только команду
-
-        if (!m_isDrawing) {
-            m_doodleArea->applyRemoteCommand(drawCmd);
-            QJsonArray pointsArray = message["points"].toArray();
-            QVector<QPoint> points;
-
-            for (const QJsonValue& val : pointsArray) {
-                QJsonObject pointObj = val.toObject();
-                points.append(QPoint(pointObj["x"].toInt(), pointObj["y"].toInt()));
-            }
-        }
-    }
-    else if (type == "chat") {
-        QString player = message["player"].toString();
-        QString text = message["text"].toString();
-        ui->chatText->append(player + ": " + text);
-    }
-    else if (type == "correctGuess") {
-        QString guesser = message["guesser"].toString();
-        QString word = message["word"].toString();
-        ui->chatText->append("*** " + guesser + " угадал слово: " + word + " ***");
-
-        // Обновление таблицы очков
-        QJsonObject scores = message["scores"].toObject();
-        // ui->scoresTable->clear();
-
-        // ... fill the scores table ...
-    }
-}*/
-
 void GameWindow::updateScoresTable(const QJsonObject& scores) {
     for (int row = 0; row < (ui->scoresTable->rowCount()); ++row) {
         QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
@@ -148,20 +94,73 @@ void GameWindow::updateScoresTable(const QJsonObject& scores) {
 
 void GameWindow::processServerMessage(const QJsonObject &message) {
     QString type = message["type"].toString();
-    qDebug() << "Processing message type:" << type;  // Логирование для отладки
+    // qDebug() << "Processing message type:" << type;  // Логирование для отладки
 
 
-    if (type == "playerJoined"){
+    if (type == "playerJoined") {
         QString Name = message["name"].toString();
+        QJsonObject scores = message["scores"].toObject();
 
-        int rowCount = ui->scoresTable->rowCount();
+        // Поиск игрока в таблице
+        int playerRow = -1;
+        for (int row = 0; row < ui->scoresTable->rowCount(); ++row) {
+            QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
+            if (nameItem && nameItem->text() == Name) {
+                playerRow = row;
+                break;
+            }
+        }
 
+        // Если игрок не найден, добавляем новую строку
+        if (playerRow == -1) {
+            int rowCount = ui->scoresTable->rowCount();
+
+            // **Ключевое изменение: Сначала создаем строку!**
+            ui->scoresTable->insertRow(rowCount);
+            playerRow = rowCount; // Сохраняем индекс новой строки
+        }
+
+        // Создаем элементы для имени и очков (с нулевым значением)
         QTableWidgetItem *item1 = new QTableWidgetItem(Name);
-        QTableWidgetItem *item2 = new QTableWidgetItem("0");
-        ui->scoresTable->insertRow(rowCount);
-        ui->scoresTable->setItem(rowCount, 0, item1);
-        ui->scoresTable->setItem(rowCount, 1, item2);
+        QTableWidgetItem *item2 = new QTableWidgetItem("0"); // Инициализируем счет нулем.
+
+        // Вставляем элементы в таблицу
+        ui->scoresTable->setItem(playerRow, 0, item1);
+        ui->scoresTable->setItem(playerRow, 1, item2);
+
+
+        // Глобальный метод обновления очков:
+        for (int row = 0; row < ui->scoresTable->rowCount(); ++row) {
+            QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
+            if (nameItem) {
+                QString playerName = nameItem->text();
+
+                // Проверяем, есть ли для этого игрока очки в полученном сообщении
+                if (scores.contains(playerName)) {
+                    int score = scores[playerName].toInt();
+
+                    // Получаем элемент таблицы для очков
+                    QTableWidgetItem* scoreItem = ui->scoresTable->item(row, 1);
+
+                    // Обновляем или создаем элемент таблицы с очками
+                    if (scoreItem) {
+                        scoreItem->setText(QString::number(score));
+                    } else {
+                        scoreItem = new QTableWidgetItem(QString::number(score));
+                        ui->scoresTable->setItem(row, 1, scoreItem);
+                    }
+                } else {
+                    // Если в сообщении нет очков для этого игрока, сбрасываем их в 0 (опционально)
+                    QTableWidgetItem* scoreItem = ui->scoresTable->item(row, 1);
+                    if (scoreItem) {
+                        scoreItem->setText("0");
+                    }
+                }
+            }
+        }
     }
+
+
 
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
@@ -173,8 +172,6 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         setupGameUI(m_isDrawing);
 
         if (m_isDrawing) {
-            ui->wordLabel->setText("Ваш ход рисовать!");
-        } else {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
         }
     }
@@ -194,16 +191,14 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         ui->chatText->append(player + ": " + text);
     }
     else if (type == "correctGuess") {
+        QJsonObject scores = message["scores"].toObject();
+        updateScoresTable(scores);
         QString guesser = message["guesser"].toString();
         QString word = message["word"].toString();
         ui->chatText->append("✓ " + guesser + " угадал: " + word);
 
         // Автоматически очищаем поле ввода
         ui->guessEdit->clear();
-    }
-    else if (type == "correctGuess"){
-        QJsonObject scores = message["scores"].toObject();
-        updateScoresTable(scores);
     }
 
     else {
@@ -212,13 +207,8 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
 }
 
 void GameWindow::setupGameUI(bool isDrawer){
-    // ui->drawingToolsWidget->setVisible(isDrawer);
-    // ui->guessWidget->setVisible(!isDrawer); !!!!!!!!!!!!!!
-    // ui->blockArea->setVisible(!isDrawer);
 
-    if (isDrawer){
-        ui->wordLabel->setText("Ваш ход рисовать!");
-    } else {
+    if (!isDrawer){
         ui->wordLabel->setText("Угадывайте что рисуют!");
     }
 }

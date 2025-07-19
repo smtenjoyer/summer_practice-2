@@ -100,12 +100,18 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
 
         QJsonObject response;
         response["type"] = "registered";
-        response["success"] = true;  // Исправлено опечатку (sucsess -> success)
+        response["success"] = true;
         sendToClient(sender, response);
 
         QJsonObject playerJoined;
         playerJoined["type"] = "playerJoined";
         playerJoined["name"] = name;
+
+        QJsonObject scoresObject;
+        for (auto it = m_scores.begin(); it != m_scores.end(); ++it) {
+            scoresObject[it.key()] = it.value();
+        }
+        playerJoined["scores"] = scoresObject;
         broadcast(playerJoined);
 
         if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2) {
