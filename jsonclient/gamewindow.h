@@ -37,6 +37,8 @@ private slots:
     //Киря
 public slots:
     void processServerMessage(const QJsonObject &message);
+    void updateScoresTable(const QJsonObject& scores);
+
 
 
 private:

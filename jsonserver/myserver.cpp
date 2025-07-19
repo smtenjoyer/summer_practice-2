@@ -106,7 +106,7 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
         QJsonObject playerJoined;
         playerJoined["type"] = "playerJoined";
         playerJoined["name"] = name;
-        broadcast(playerJoined, sender);
+        broadcast(playerJoined);
 
         if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2) {
             startGame();

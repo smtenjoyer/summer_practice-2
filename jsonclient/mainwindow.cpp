@@ -106,12 +106,6 @@ void MainWindow::onReadyRead()
             continue;
         }
 
-        if (doc.isObject()) {
-            if (m_gameWindow) {
-                m_gameWindow->processServerMessage(doc.object()); 
-            }
-        }
-
         //
 
         if (doc.isObject()) {
@@ -121,8 +115,6 @@ void MainWindow::onReadyRead()
             }
         }
     }
-
-
 }
 
 

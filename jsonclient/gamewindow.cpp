@@ -126,11 +126,44 @@ void GameWindow::on_sendGuessButton_clicked()
         // ... fill the scores table ...
     }
 }*/
+
+void GameWindow::updateScoresTable(const QJsonObject& scores) {
+    for (int row = 0; row < (ui->scoresTable->rowCount()); ++row) {
+        QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
+        if(!nameItem) continue; //Проверяем, что элемент существует
+        QString playerName = nameItem->text();
+
+        if (scores.contains(playerName)) {
+            int score = scores[playerName].toInt(); // Получаем счет игрока
+            QTableWidgetItem* scoreItem = ui->scoresTable->item(row, 1);
+            if (scoreItem) {
+                scoreItem->setText(QString::number(score)); // Обновляем счет в таблице
+            } else {
+                scoreItem = new QTableWidgetItem(QString::number(score));
+                ui->scoresTable->setItem(row, 1, scoreItem);
+            }
+        }
+    }
+}
+
 void GameWindow::processServerMessage(const QJsonObject &message) {
     QString type = message["type"].toString();
     qDebug() << "Processing message type:" << type;  // Логирование для отладки
 
-    if (type == "roundStart") {
+
+    if (type == "playerJoined"){
+        QString Name = message["name"].toString();
+
+        int rowCount = ui->scoresTable->rowCount();
+
+        QTableWidgetItem *item1 = new QTableWidgetItem(Name);
+        QTableWidgetItem *item2 = new QTableWidgetItem("0");
+        ui->scoresTable->insertRow(rowCount);
+        ui->scoresTable->setItem(rowCount, 0, item1);
+        ui->scoresTable->setItem(rowCount, 1, item2);
+    }
+
+    else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
         m_isDrawing = (drawer == m_playerName);
 
@@ -168,6 +201,11 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         // Автоматически очищаем поле ввода
         ui->guessEdit->clear();
     }
+    else if (type == "correctGuess"){
+        QJsonObject scores = message["scores"].toObject();
+        updateScoresTable(scores);
+    }
+
     else {
         qDebug() << "Unknown message type:" << type;
     }
@@ -176,7 +214,7 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
 void GameWindow::setupGameUI(bool isDrawer){
     // ui->drawingToolsWidget->setVisible(isDrawer);
     // ui->guessWidget->setVisible(!isDrawer); !!!!!!!!!!!!!!
-    ui->blockArea->setVisible(!isDrawer);
+    // ui->blockArea->setVisible(!isDrawer);
 
     if (isDrawer){
         ui->wordLabel->setText("Ваш ход рисовать!");

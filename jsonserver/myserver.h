@@ -31,6 +31,7 @@ public:
     void startServer();
 
 private:
+
     // cокеты и данные
     QList<QTcpSocket*> m_clients;
     QMap<QTcpSocket*, QString> m_clientNames;
