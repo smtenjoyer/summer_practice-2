@@ -4,7 +4,7 @@ myserver::myserver(QObject *parent) : QTcpServer(parent),
     m_gameState(WaitingForPlayers),
     m_currentRound(0)
 {
-    m_words = {"Крокодил", "Самолет", "Малыш Йода", "Яблоко", "Программист", "Слон"};
+    m_words = {"Крокодила", "Самолет", "Малыша Йоду", "Яблоко", "Программиста", "Слона"};
     connect(&m_roundTimer, &QTimer::timeout, this, &myserver::onRoundTimerTimeout);
 }
 
@@ -108,7 +108,7 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
         playerJoined["name"] = name;
         broadcast(playerJoined);
 
-        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2) {
+        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 1) {                      //!!!!!!!
             startGame();
         }
     }
