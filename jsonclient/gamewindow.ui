@@ -10,6 +10,21 @@
     <height>730</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>1123</width>
+    <height>730</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1123</width>
+    <height>730</height>
+   </size>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -17,7 +32,7 @@
    <widget class="QPushButton" name="sendGuessButton">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>170</x>
       <y>680</y>
       <width>31</width>
       <height>29</height>
@@ -38,7 +53,7 @@
      <rect>
       <x>10</x>
       <y>680</y>
-      <width>211</width>
+      <width>161</width>
       <height>28</height>
      </rect>
     </property>
@@ -88,8 +103,8 @@
      <rect>
       <x>180</x>
       <y>10</y>
-      <width>711</width>
-      <height>71</height>
+      <width>931</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -99,20 +114,35 @@
       <fontweight>Black</fontweight>
      </font>
     </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::LeftToRight</enum>
+    </property>
     <property name="styleSheet">
      <string notr="true">color: rgb(0, 0, 0);</string>
     </property>
     <property name="text">
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:20pt;&quot;&gt;TextLabel&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
+    <property name="textFormat">
+     <enum>Qt::TextFormat::RichText</enum>
+    </property>
+    <property name="scaledContents">
+     <bool>false</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QTextBrowser" name="chatText">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>10</y>
-      <width>211</width>
-      <height>192</height>
+      <x>10</x>
+      <y>291</y>
+      <width>161</width>
+      <height>381</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -122,32 +152,42 @@
    <widget class="QWidget" name="drawingAreaContainer" native="true">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1121</width>
-      <height>711</height>
+      <x>180</x>
+      <y>70</y>
+      <width>931</width>
+      <height>601</height>
      </rect>
     </property>
     <property name="layoutDirection">
      <enum>Qt::LayoutDirection::RightToLeft</enum>
     </property>
    </widget>
+   <widget class="QWidget" name="widget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1123</width>
+      <height>730</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>1123</width>
+      <height>730</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-image: url(:/images/crocodile.png);</string>
+    </property>
+   </widget>
+   <zorder>widget</zorder>
    <zorder>drawingAreaContainer</zorder>
    <zorder>chatText</zorder>
    <zorder>sendGuessButton</zorder>
    <zorder>guessEdit</zorder>
    <zorder>wordLabel</zorder>
    <zorder>scoresTable</zorder>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1123</width>
-     <height>21</height>
-    </rect>
-   </property>
   </widget>
  </widget>
  <resources/>

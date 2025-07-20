@@ -17,6 +17,7 @@ class DoodleArea : public QWidget
 
 public:
     enum ShapeType {
+        None,
         Pencil,
         Rubber,
         Fill,

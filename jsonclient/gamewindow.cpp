@@ -22,6 +22,7 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     QSize newSize(1121, 711);
     m_doodleArea = new DoodleArea(newSize);
+    setNoneTool();
     m_doodleArea->resize(newSize);
 
     QLayout * layout = ui->drawingAreaContainer->layout();
@@ -57,6 +58,57 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 GameWindow::~GameWindow()
 {
     delete ui;
+}
+
+void GameWindow::setNoneTool() {
+    if(m_doodleArea){
+        m_doodleArea->setTool(DoodleArea::None);
+    }
+}
+
+void GameWindow::setFillTool() {
+    m_doodleArea->setTool(DoodleArea::Fill);
+
+}
+
+void GameWindow::setPencilTool() {
+    m_doodleArea->setTool(DoodleArea::Pencil);
+}
+void GameWindow::setRubberTool() {
+    m_doodleArea->setTool(DoodleArea::Rubber);
+}
+
+void GameWindow::setLineTool() {
+    if(m_doodleArea){
+        m_doodleArea->setTool(DoodleArea::Line);
+        m_doodleArea->setCursor(Qt::CrossCursor);
+    }
+}
+
+void GameWindow::setRectangleTool() {
+    if(m_doodleArea){
+        m_doodleArea->setTool(DoodleArea::Rectangle);
+        m_doodleArea->setCursor(Qt::CrossCursor);
+    }
+}
+
+void GameWindow::setEllipseTool() {
+    if(m_doodleArea){
+        m_doodleArea->setTool(DoodleArea::Ellipse);
+        m_doodleArea->setCursor(Qt::CrossCursor);
+    }
+}
+
+void GameWindow::undoAction() {
+    if (m_doodleArea) {
+        m_doodleArea->undo();
+    }
+}
+
+void GameWindow::redoAction() {
+    if (m_doodleArea) {
+        m_doodleArea->redo();
+    }
 }
 
 void GameWindow::on_sendGuessButton_clicked()
@@ -160,8 +212,6 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         }
     }
 
-
-
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
         m_isDrawing = (drawer == m_playerName);
@@ -173,6 +223,9 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
 
         if (!m_isDrawing) {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
+            setNoneTool();
+        } else {
+            setPencilTool();
         }
     }
     else if (type == "yourTurn") {
@@ -200,7 +253,12 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         // Автоматически очищаем поле ввода
         ui->guessEdit->clear();
     }
-
+    else if (type == "roundEnd") {
+        setNoneTool();
+        ui->wordLabel->setText("Приготовились!");
+        QJsonObject scores = message["scores"].toObject();
+        updateScoresTable(scores);
+    }
     else {
         qDebug() << "Unknown message type:" << type;
     }

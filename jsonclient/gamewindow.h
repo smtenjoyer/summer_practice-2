@@ -19,6 +19,17 @@ class GameWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    enum ShapeType {
+        None,
+        Pencil,
+        Rubber,
+        Fill,
+        Line,
+        Rectangle,
+        Ellipse,
+        Textt
+    };
+
     explicit GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent = nullptr);
     ~GameWindow() override;
 
@@ -34,6 +45,18 @@ signals:
 private slots:
     void on_sendGuessButton_clicked();
     void sendDrawingPoints(const QVector<QPoint>& points);
+
+    void setFillTool();
+    void setPencilTool();
+    void setRubberTool();
+
+    void setNoneTool();
+    void setLineTool();
+    void setRectangleTool();
+    void setEllipseTool();
+    void undoAction();
+    void redoAction();
+
     //Киря
 public slots:
     void processServerMessage(const QJsonObject &message);
