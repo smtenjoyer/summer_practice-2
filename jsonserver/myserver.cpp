@@ -1,4 +1,5 @@
 #include "myserver.h"
+#include <QList>
 
 myserver::myserver(QObject *parent) : QTcpServer(parent),
     m_gameState(WaitingForPlayers),
@@ -159,6 +160,7 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
 
                 broadcast(correctGuess);
                 endRound();
+                ifOver();
             }
             else {
                 // Неправильный ответ
@@ -262,11 +264,26 @@ void myserver::endRound() {
 }
 
 void myserver::selectNewDrawer() {
-
     if (m_clientNames.isEmpty()) return;
 
-    int nextIndex = QRandomGenerator::global()->bounded(m_clientNames.size());
-    m_currentDrawer = m_clientNames.values().at(nextIndex);
+    // все возможных рисовальщики кроме последнего
+    QSet<QString> possibleDrawers;
+    for (const QString& name : m_clientNames.values()) {
+        if (name != lastDrawer) {
+            possibleDrawers.insert(name);
+        }
+    }
+
+    if (possibleDrawers.isEmpty()) {
+        m_currentDrawer = m_clientNames.values().at(QRandomGenerator::global()->bounded(m_clientNames.size()));
+    } else {
+        int randomIndex = QRandomGenerator::global()->bounded(possibleDrawers.size());
+        auto it = possibleDrawers.begin();
+        std::advance(it, randomIndex);
+        m_currentDrawer = *it;
+    }
+
+    lastDrawer = m_currentDrawer;
 }
 
 QString myserver::selectRandomWord(){
@@ -278,7 +295,40 @@ QString myserver::selectRandomWord(){
 void myserver::onRoundTimerTimeout(){
 
     endRound();
+    ifOver();
 }
+
+
+void myserver::ifOver(){
+    bool gameOver = true;
+    int totalScore = 0;
+
+    for (auto it = m_scores.begin(); it != m_scores.end(); ++it) {
+        if (it.value() < 10) {
+            gameOver = false;
+            break;
+        }
+        totalScore += it.value();
+    }
+
+    if (gameOver && totalScore > 100) {
+        gameOverLogic();
+    }
+}
+
+void myserver::gameOverLogic(){
+    QJsonObject gameOver;
+    gameOver["type"] = "gameOver";
+
+    QJsonObject scoresObject;
+    for (auto it = m_scores.begin(); it != m_scores.end(); ++it) {
+        scoresObject[it.key()] = it.value();
+    }
+    gameOver["scores"] = scoresObject;
+    broadcast(gameOver);
+}
+
+
 
 void myserver::sendToClient(QTcpSocket *socket, const QJsonObject &message){
 

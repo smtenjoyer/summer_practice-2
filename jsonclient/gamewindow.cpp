@@ -259,10 +259,62 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         QJsonObject scores = message["scores"].toObject();
         updateScoresTable(scores);
     }
+    else if (type == "gameOver") {
+        QJsonObject scores = message["scores"].toObject();
+        processGameOver(scores);
+    }
     else {
         qDebug() << "Unknown message type:" << type;
     }
 }
+
+void GameWindow::processGameOver(const QJsonObject& scores) {
+    QList<QPair<QString, int>> sortedScores;
+    for (auto it = scores.begin(); it != scores.end(); ++it) {
+        QString playerName = it.key();
+        int playerScore = it.value().toInt();
+        sortedScores.append(qMakePair(playerName, playerScore));
+    }
+
+    std::sort(sortedScores.begin(), sortedScores.end(), [](const QPair<QString, int>& a, const QPair<QString, int>& b) {
+        return a.second > b.second;
+    });
+
+    QWidget* gameOverPage = ui->stackedWidget->widget(1);
+    QLabel* firstPlace = gameOverPage->findChild<QLabel*>("firstPlace");
+    QLabel* secondPlace = gameOverPage->findChild<QLabel*>("secondPlace");
+    QLabel* thirdPlace = gameOverPage->findChild<QLabel*>("thirdPlace");
+    QLabel* numFirst = gameOverPage->findChild<QLabel*>("numFirst");
+    QLabel* numSecond = gameOverPage->findChild<QLabel*>("numSecond");
+    QLabel* numThird = gameOverPage->findChild<QLabel*>("numThird");
+
+    if (sortedScores.size() > 0) {
+        firstPlace->setText(sortedScores[0].first);
+        numFirst->setText(QString::number(sortedScores[0].second));
+    } else {
+        firstPlace->setText("Нет данных");
+        numFirst->setText("0");
+    }
+
+    if (sortedScores.size() > 1) {
+        secondPlace->setText(sortedScores[1].first);
+        numSecond->setText(QString::number(sortedScores[1].second));
+    } else {
+        secondPlace->setText("Нет данных");
+        numSecond->setText("0");
+    }
+
+    if (sortedScores.size() > 2) {
+        thirdPlace->setText(sortedScores[2].first);
+        numThird->setText(QString::number(sortedScores[2].second));
+    } else {
+        thirdPlace->setText("Нет данных");
+        numThird->setText("0");
+    }
+
+    ui->stackedWidget->setCurrentIndex(1);
+}
+
 
 void GameWindow::setupGameUI(bool isDrawer){
 

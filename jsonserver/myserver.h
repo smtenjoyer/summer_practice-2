@@ -46,6 +46,8 @@ private:
     QTimer m_roundTimer;
     QStringList m_words;
 
+    QString lastDrawer;
+
     //для смены ролей
     QMap<QTcpSocket*, bool> clients;  // true = художник, false = наблюдатель
     QList<QJsonObject> m_drawingHistory;
@@ -57,13 +59,16 @@ private:
     void broadcast(const QJsonObject& message, QTcpSocket* exclude = nullptr);
     void processMessage(const QJsonObject& message, QTcpSocket* sender);
 
-    // bгровые методы
+    // игровые методы
     void startGame();
     void startNewRound();
     void endRound();
     void selectNewDrawer();
     QString selectRandomWord();
     void updateAllClientsGameState();
+
+    void ifOver();
+    void gameOverLogic();
 //
 signals:
     void roundStarted(const QString &drawerName);

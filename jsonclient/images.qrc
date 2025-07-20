@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>images/crocodile.png</file>
         <file>images/crocodilele.png</file>
+        <file>images/crocodilllll.png</file>
     </qresource>
 </RCC>

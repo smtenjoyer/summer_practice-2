@@ -43,6 +43,8 @@ signals:
     void sendDrawingCommand(const QJsonObject& command);
     //
 private slots:
+    void processGameOver(const QJsonObject& scores);
+
     void on_sendGuessButton_clicked();
     void sendDrawingPoints(const QVector<QPoint>& points);
 
