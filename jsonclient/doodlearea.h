@@ -28,6 +28,10 @@ public:
     };
 
 public:
+    void fillArea(const QPoint &startPoint, const QColor &fillColor);
+    int getPenWidth() const { return myPenWidth; }
+
+
     DoodleArea(QWidget *parent = 0);
     DoodleArea(const QSize& size, QWidget *parent = nullptr);
     bool openImage(const QString &filename);
@@ -63,7 +67,7 @@ public slots:
     void redo();
 
 private:
-
+    DoodleArea *doodleArea;
     void mousePressEvent(QMouseEvent *event) override;
     void finishTextInput();
 
