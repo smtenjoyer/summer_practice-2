@@ -219,17 +219,15 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
     }
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
-        m_isDrawing = (drawer == m_playerName); // Определяем, является ли текущий игрок художником
+        m_isDrawing = (drawer == m_playerName); //  Определяем, является ли текущий игрок художником
+        qDebug() << "roundStart: m_isDrawing = " << m_isDrawing << ", drawer = " << drawer << ", m_playerName = " << m_playerName;  // Добавьте отладочный вывод
+
         setActions(m_isDrawing);
-
+        //  Очищаем холст и настраиваем UI
         m_doodleArea->clearImage(); // Всегда очищаем холст при начале раунда
-
         setupGameUI(m_isDrawing); // Настраиваем UI в зависимости от роли
-
-
         if (!m_isDrawing) {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
-
         } else {
             setPencilTool(); // Если художник, по умолчанию карандаш
             ui->toolBar->setVisible(true);
@@ -237,7 +235,7 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
     }
     else if (type == "yourTurn") {
         QString word = message["word"].toString();
-        ui->wordLabel->setText("Нарисуй-ка мне " + word);
+        ui->wordLabel->setText("Нарисуй-ка мне: " + word);
     }
     else if (type == "draw") {
         // Принимаем и применяем все команды рисования, кроме тех, что мы сами генерируем (если мы художник)
@@ -373,7 +371,7 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
 
 void GameWindow::createActions(){
 
-    clearScreenAct = new QAction(tr("&Очистить изображение..."), this);
+    clearScreenAct = new QAction(tr("&О"), this);
     clearScreenAct->setShortcut(tr("Ctrl+L"));
     connect(clearScreenAct, SIGNAL(triggered()), m_doodleArea, SLOT(clearImage()));
 
@@ -457,6 +455,13 @@ void GameWindow::createToolBars() {
     ui->toolBar->addSeparator();
     ui->toolBar->addAction(undoActionBtn);
     ui->toolBar->addAction(redoActionBtn);
+
+    ui->toolBar->addSeparator();
+    ui->toolBar->addSeparator();
+    ui->toolBar->addSeparator();
+    ui->toolBar->addSeparator();
+    ui->toolBar->addSeparator();
+    ui->toolBar->addAction(clearScreenAct);
 }
 
 

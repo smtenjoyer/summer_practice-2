@@ -5,7 +5,7 @@ myserver::myserver(QObject *parent) : QTcpServer(parent),
     m_gameState(WaitingForPlayers),
     m_currentRound(0)
 {
-    m_words = {"Крокодила", "Самолет", "Малыша Йоду", "Яблоко", "Программиста", "Слона"};
+    m_words = {"Крокодил", "Самолет", "Малыш Йода", "Яблоко", "Программист", "Слон"};
     connect(&m_roundTimer, &QTimer::timeout, this, &myserver::onRoundTimerTimeout);
 }
 
@@ -199,33 +199,7 @@ void myserver::startGame(){
     startNewRound();
 }
 
-/*void myserver::startNewRound() {
 
-    selectNewDrawer();
-    m_currentWord = selectRandomWord();
-
-    //Киря работает
-    // Очищаем историю рисования при смене раунда
-    m_drawingHistory.clear();
-
-    QTcpSocket* drawerSocket = m_clientNames.key(m_currentDrawer);
-
-    if (drawerSocket){
-
-        QJsonObject drawerMessage;
-        drawerMessage["type"] = "yourTurn";
-        drawerMessage["word"] = m_currentWord;
-        sendToClient(drawerSocket, drawerMessage);
-    }
-
-    QJsonObject roundStart;
-    roundStart["type"] = "roundStart";
-    roundStart["drawer"] = m_currentDrawer;
-    roundStart["round"] = m_currentRound;
-    broadcast(roundStart);
-
-    m_roundTimer.start(60000);
-}*/
 
 void myserver::startNewRound() {
     m_gameState = Drawing;
@@ -276,7 +250,12 @@ void myserver::endRound() {
     roundEnd["scores"] = scoresObject;
     broadcast(roundEnd);
 
-    QTimer::singleShot(5000, this, &myserver::startNewRound);
+    // Сброс состояния для следующего раунда
+    m_currentWord = ""; // Очищаем слово
+    m_drawingHistory.clear(); // Очищаем историю рисования
+    // m_currentDrawer - оставляем, чтобы он не смог рисовать в начале нового раунда
+    // m_gameState = WaitingForPlayers; // Оставляем, ждем пока пройдет таймаут
+    QTimer::singleShot(5000, this, &myserver::startNewRound); // Запускаем новый раунд через 5 секунд
 }
 
 void myserver::selectNewDrawer() {
