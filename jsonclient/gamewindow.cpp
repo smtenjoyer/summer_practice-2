@@ -213,12 +213,11 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
             int rowCount = ui->scoresTable->rowCount();
             ui->scoresTable->insertRow(rowCount);
             playerRow = rowCount;
+            QTableWidgetItem *item1 = new QTableWidgetItem(Name);
+            QTableWidgetItem *item2 = new QTableWidgetItem("0");
+            ui->scoresTable->setItem(playerRow, 0, item1);
+            ui->scoresTable->setItem(playerRow, 1, item2);
         }
-
-        QTableWidgetItem *item1 = new QTableWidgetItem(Name);
-        QTableWidgetItem *item2 = new QTableWidgetItem("0");
-        ui->scoresTable->setItem(playerRow, 0, item1);
-        ui->scoresTable->setItem(playerRow, 1, item2);
 
         // Глобальный метод обновления очков (для всех игроков, включая только что присоединившегося)
         for (int row = 0; row < ui->scoresTable->rowCount(); ++row) {
@@ -242,6 +241,27 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
                 }
             }
         }
+    }
+    // НОВЫЙ БЛОК: Обработка полного списка игроков при подключении
+    else if (type == "playerList") { // Или "initialState", как решите на сервере
+        QJsonArray playersArray = message["players"].toArray();
+        ui->scoresTable->setRowCount(0); // Очищаем таблицу перед заполнением
+
+        for (const QJsonValue& value : playersArray) {
+            QJsonObject playerObj = value.toObject();
+            QString playerName = playerObj["name"].toString();
+            int playerScore = playerObj["score"].toInt();
+
+            int rowCount = ui->scoresTable->rowCount();
+            ui->scoresTable->insertRow(rowCount);
+
+            QTableWidgetItem *nameItem = new QTableWidgetItem(playerName);
+            QTableWidgetItem *scoreItem = new QTableWidgetItem(QString::number(playerScore));
+
+            ui->scoresTable->setItem(rowCount, 0, nameItem);
+            ui->scoresTable->setItem(rowCount, 1, scoreItem);
+        }
+        qDebug() << "Получен и обновлен полный список игроков.";
     }
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();

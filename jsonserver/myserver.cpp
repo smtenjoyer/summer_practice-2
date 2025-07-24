@@ -115,6 +115,21 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
         playerJoined["scores"] = scoresObject;
         broadcast(playerJoined);
 
+        //  Отправка полного списка игроков новому клиенту
+        QJsonObject playerListMsg;
+        playerListMsg["type"] = "playerList";
+        QJsonArray playersArray;
+        for (QTcpSocket* clientSocket : m_clients) {
+            if (m_clientNames.contains(clientSocket)) {
+                QString existingPlayerName = m_clientNames.value(clientSocket);
+                QJsonObject playerObj;
+                playerObj["name"] = existingPlayerName;
+                playerObj["score"] = m_scores.value(existingPlayerName, 0);
+                playersArray.append(playerObj);
+            }
+        }
+        playerListMsg["players"] = playersArray;
+        sendToClient(sender, playerListMsg);
         if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 1) {                      //!!!!!!!
             startGame();
         }
@@ -213,6 +228,7 @@ void myserver::startGame(){
 }*/
 
 void myserver::startNewRound() {
+    m_gameState = Drawing;
     m_isRoundActive = true; // Раунд активен
     m_drawingHistory.clear();
 
