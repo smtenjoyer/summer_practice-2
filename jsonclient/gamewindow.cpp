@@ -424,11 +424,11 @@ void GameWindow::createActions(){
 
 
 
-    undoActionBtn = new QAction(tr("&Undo"), this);
+    undoActionBtn = new QAction(tr("&U"), this);
     undoActionBtn->setShortcut(QKeySequence::Undo);
     connect(undoActionBtn, &QAction::triggered, this, &GameWindow::undoAction);
 
-    redoActionBtn = new QAction(tr("&Redo"), this);
+    redoActionBtn = new QAction(tr("&R"), this);
     redoActionBtn->setShortcut(QKeySequence::Redo);
     connect(redoActionBtn, &QAction::triggered, this, &GameWindow::redoAction);
 
@@ -439,6 +439,8 @@ void GameWindow::createActions(){
     toolGroup->addAction(lineAction);
     toolGroup->addAction(rectangleAction);
     toolGroup->addAction(ellipseAction);
+    toolGroup->addAction(undoActionBtn);
+    toolGroup->addAction(redoActionBtn);
 
     PencilAct->setCheckable(true);
     RubberAct->setCheckable(true);
@@ -476,6 +478,11 @@ void GameWindow::createToolBars() {
     ui->toolBar->addSeparator();
     ui->toolBar->addAction(penColorAct);
     ui->toolBar->addAction(penWidthAct);
+
+    ui->toolBar->addSeparator();
+    ui->toolBar->addSeparator();
+    ui->toolBar->addAction(undoActionBtn);
+    ui->toolBar->addAction(redoActionBtn);
 }
 
 
