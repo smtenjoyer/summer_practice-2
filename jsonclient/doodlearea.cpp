@@ -184,6 +184,7 @@ void DoodleArea::mousePressEvent(QMouseEvent *event) {
             QJsonObject cmd;
             cmd["type"] = "draw";
             cmd["tool"] = "fill";
+            cmd["action"] = "draw";
             cmd["x"] = event->pos().x();
             cmd["y"] = event->pos().y();
             cmd["color"] = myPenColor.name();
@@ -208,7 +209,7 @@ void DoodleArea::mousePressEvent(QMouseEvent *event) {
         case Line:
         case Rectangle:
         case Ellipse: {
-            QJsonObject cmd;
+            /*QJsonObject cmd;
             cmd["type"] = "draw";
             cmd["tool"] = (currentTool == Line) ? "line" :
                               (currentTool == Rectangle) ? "rectangle" : "ellipse";
@@ -217,7 +218,7 @@ void DoodleArea::mousePressEvent(QMouseEvent *event) {
             cmd["y1"] = event->pos().y();
             cmd["color"] = myPenColor.name();
             cmd["width"] = myPenWidth;
-            emit drawingCommandGenerated(cmd);
+            emit drawingCommandGenerated(cmd); */
             break;
         }
 
@@ -300,22 +301,23 @@ void DoodleArea::mouseMoveEvent(QMouseEvent *event) {
     case Pencil:
     case Rubber: {
         // Локальное рисование
-        drawLineTo(endPoint); // Это просто рисует на локальной image
+        QPoint p1_for_send = lastPoint; // Сохраняем current lastPoint для отправки
+        drawLineTo(endPoint); // drawLineTo обновит lastPoint до endPoint
 
         QJsonObject cmd;
-        cmd["type"] = "draw"; // Унифицируем тип
+        cmd["type"] = "draw";
         cmd["tool"] = (currentTool == Pencil) ? "pencil" : "rubber";
-        cmd["action"] = "move"; // Действие: продолжение штриха
-        cmd["x1"] = lastPoint.x(); // Начало текущего сегмента
-        cmd["y1"] = lastPoint.y();
-        cmd["x2"] = endPoint.x(); // Конец текущего сегмента
+        cmd["action"] = "move";
+        cmd["x1"] = p1_for_send.x(); // Используем сохраненную lastPoint
+        cmd["y1"] = p1_for_send.y();
+        cmd["x2"] = endPoint.x();
         cmd["y2"] = endPoint.y();
-        cmd["color"] = (currentTool == Pencil) ? myPenColor.name() : "#FFFFFF"; // Ластик = белый цвет
+        cmd["color"] = (currentTool == Pencil) ? myPenColor.name() : "#FFFFFF";
         cmd["width"] = myPenWidth;
         emit drawingCommandGenerated(cmd);
 
         // lastPoint обновляется после отправки, для следующего mouseMoveEvent
-        lastPoint = endPoint;
+
         break;
     }
 
@@ -355,71 +357,81 @@ void DoodleArea::mouseMoveEvent(QMouseEvent *event) {
         tempImage = QImage();
     }
 }*/
+// doodlearea.cpp
+
 void DoodleArea::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton && doodling) {
         QPoint endPoint = event->pos();
-        QImage oldImage = image.copy(); // Сохраняем состояние до изменения для Undo/Redo
+        // oldImage уже сохранена в mousePressEvent
 
-        if (currentTool == Pencil || currentTool == Rubber) {
+        switch(currentTool) {
+        case Pencil:
+        case Rubber: {
             drawLineTo(endPoint); // Рисуем последний сегмент на основной image
 
             QJsonObject releaseCmd;
             releaseCmd["type"] = "draw";
             releaseCmd["tool"] = (currentTool == Pencil) ? "pencil" : "rubber";
-            releaseCmd["action"] = "release"; // Действие: завершение штриха
+            releaseCmd["action"] = "release"; // Сигнал о завершении штриха
+            // Можно добавить последние точки для надежности, если "move" команды не доходят
+            releaseCmd["x1"] = lastPoint.x(); // Отправляем последнюю связку точек на всякий случай
+            releaseCmd["y1"] = lastPoint.y();
+            releaseCmd["x2"] = endPoint.x();
+            releaseCmd["y2"] = endPoint.y();
+            releaseCmd["color"] = (currentTool == Pencil) ? myPenColor.name() : "#FFFFFF";
+            releaseCmd["width"] = myPenWidth;
             emit drawingCommandGenerated(releaseCmd);
+            break;
+        }
 
-        } else if (currentTool == Line || currentTool == Rectangle || currentTool == Ellipse) {
+        case Line:
+        case Rectangle:
+        case Ellipse: {
             // Рисуем окончательную фигуру на основной image
-            drawShape(endPoint, &image); // Рисуем на основной image, не на finalImage
-                // (DrawShapeCommand будет использовать image до и после)
+            drawShape(endPoint, &image);
 
             // Отправляем окончательную команду для фигуры на сервер
             QJsonObject cmd;
-            cmd["type"] = "draw"; // Унифицируем тип
+            cmd["type"] = "draw";
             cmd["tool"] = (currentTool == Line) ? "line" :
                               (currentTool == Rectangle) ? "rectangle" : "ellipse";
-            cmd["action"] = "draw"; // Действие: окончательная отрисовка
-            cmd["x1"] = lastPoint.x(); // Начальная точка (из mousePressEvent)
+            cmd["action"] = "draw"; // Действие: окончательная отрисовка фигуры
+            cmd["x1"] = lastPoint.x(); // Начальная точка нажатия мыши
             cmd["y1"] = lastPoint.y();
-            cmd["x2"] = endPoint.x(); // Конечная точка (текущая)
+            cmd["x2"] = endPoint.x(); // Конечная точка отпускания мыши
             cmd["y2"] = endPoint.y();
             cmd["color"] = myPenColor.name();
             cmd["width"] = myPenWidth;
             emit drawingCommandGenerated(cmd);
-
-        } else if (currentTool == Fill) {
-            // Логика для заливки
-            QColor oldColor = image.pixelColor(event->pos());
-            if (oldColor != myPenColor) {
-                // Измените вызов fillArea здесь:
-                fillArea(event->pos(), myPenColor); // Передаем myPenColor как fillColor
-
-                QJsonObject cmd;
-                cmd["type"] = "draw";
-                cmd["tool"] = "fill";
-                cmd["action"] = "draw";
-                cmd["x"] = event->pos().x();
-                cmd["y"] = event->pos().y();
-                cmd["color"] = myPenColor.name(); // Отправляем цвет, которым заливаем
-                emit drawingCommandGenerated(cmd);
-            }
+            break;
         }
 
+        case Fill: {
+            // Заливка уже отправлена в mousePressEvent, здесь дублировать не нужно
+            break;
+        }
 
-        // Для Undo/Redo
-        // oldImage - это состояние до начала рисования, image - после
+        case Textt: {
+            // Логика Textt обрабатывается через QLineEdit::editingFinished
+            // Здесь не нужно отправлять никаких команд
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        // Для Undo/Redo (этот блок должен быть общим для всех инструментов, кроме текста)
         DrawShapeCommand *command = new DrawShapeCommand(this, lastPoint, endPoint,
                                                          currentTool, myPenColor, myPenWidth,
-                                                         oldImage, image.copy()); // Передаем копию image после всех изменений
+                                                         oldImage, image.copy());
         undoStack->push(command);
 
-        doodling = false; // m_isDrawing = false;
+        doodling = false;
         tempImage = QImage(); // Очищаем временное изображение
-        update(); // Обновляем виджет после завершения рисования
+        update(); // Обновляем виджет, чтобы показать окончательный результат
     }
 }
-
 
 void DoodleArea::setTool(ShapeType tool) {
     currentTool = tool;
@@ -640,15 +652,27 @@ void DoodleArea::applyRemoteCommand(const QJsonObject &command) {
         painter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
         if (tool == "pencil" || tool == "rubber") {
-            // Ластик всегда рисует белым
             if (tool == "rubber") {
                 painter.setPen(QPen(Qt::white, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
             }
 
-            if (action == "move") { // Движение мышью для карандаша/ластика
+            if (action == "start") { // Инициализируем lastRemotePoint при старте
+                lastRemotePoint = QPoint(command["x"].toInt(), command["y"].toInt());
+                // Можно нарисовать точку для начала линии, если хотите, но drawLineTo дальше сделает это.
+                // painter.drawPoint(lastRemotePoint);
+            } else if (action == "move") {
                 QPoint p1(command["x1"].toInt(), command["y1"].toInt());
                 QPoint p2(command["x2"].toInt(), command["y2"].toInt());
                 painter.drawLine(p1, p2);
+                // Если вы используете lastRemotePoint, то после рисования сегмента обновите ее:
+                // lastRemotePoint = p2; // Это если вы хотите, чтобы удаленный клиент тоже использовал lastRemotePoint
+            } else if (action == "release") {
+                // Для "release" можно просто нарисовать последний сегмент, если он есть
+                QPoint p1(command["x1"].toInt(), command["y1"].toInt());
+                QPoint p2(command["x2"].toInt(), command["y2"].toInt());
+                painter.drawLine(p1, p2);
+                // lastRemotePoint можно сбросить, если он используется для непрерывных линий
+                lastRemotePoint = QPoint(0,0); // Или любое "невалидное" значение
             }
         }
         else if (tool == "line" && action == "draw") { // Окончательная линия
