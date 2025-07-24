@@ -3,5 +3,15 @@
         <file>images/crocodile.png</file>
         <file>images/crocodilele.png</file>
         <file>images/crocodilllll.png</file>
+        <file>images/Color.png</file>
+        <file>images/Ellipse.png</file>
+        <file>images/fill.png</file>
+        <file>images/Line.png</file>
+        <file>images/main_icon.png</file>
+        <file>images/Pencil.png</file>
+        <file>images/Rectangle.png</file>
+        <file>images/Rubber.png</file>
+        <file>images/Width.png</file>
+        <file>images/crocIco.png</file>
     </qresource>
 </RCC>

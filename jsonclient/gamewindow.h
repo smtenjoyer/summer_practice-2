@@ -7,6 +7,11 @@
 #include <QJsonArray>
 #include <QVector>
 #include <QPoint>
+#include <QToolBar>
+#include <QColorDialog>
+#include <QActionGroup>
+#include <QLabel>
+#include <QPainter>
 
 class DoodleArea;
 
@@ -59,6 +64,12 @@ private slots:
     void undoAction();
     void redoAction();
 
+    void penColor();
+    void penWidth();
+
+    void updateBrushPreview(QLabel *label, int width, QColor color);
+
+
     //Киря
 public slots:
     void processServerMessage(const QJsonObject &message);
@@ -73,6 +84,27 @@ private:
     bool m_isDrawing;
 
     DoodleArea *m_doodleArea = nullptr;
+
+
+    QAction *penColorAct;
+    QAction *penWidthAct;
+    QAction *clearScreenAct;
+    QAction *fillAreaAct;
+    QAction *PencilAct;
+    QAction *RubberAct;
+    QAction *lineAction;
+    QAction *rectangleAction;
+    QAction *ellipseAction;
+
+    QAction *undoActionBtn;
+    QAction *redoActionBtn;
+
+
+    void createActions();
+    void createToolBars();
+
+    void setActions(const bool& drawing);
+
 
 };
 

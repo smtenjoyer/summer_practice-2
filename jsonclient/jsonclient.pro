@@ -32,4 +32,14 @@ RESOURCES += \
     images.qrc
 
 DISTFILES += \
-    images/crocodilele.png
+    images/Color.png \
+    images/Ellipse.png \
+    images/Line.png \
+    images/Pencil.png \
+    images/Rectangle.png \
+    images/Rubber.png \
+    images/Width.png \
+    images/crocIco.png \
+    images/crocodilele.png \
+    images/fill.png \
+    images/main_icon.png

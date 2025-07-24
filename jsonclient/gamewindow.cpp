@@ -28,43 +28,18 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
 
     m_socket->setParent(this); // Устанавливаем GameWindow родителем для сокета
 
-    // --- Подключение кнопок инструментов ---
-    connect(ui->pencilToolButton, &QPushButton::clicked, this, &GameWindow::setPencilTool);
-    connect(ui->rubberToolButton, &QPushButton::clicked, this, &GameWindow::setRubberTool);
-    connect(ui->fillToolButton, &QPushButton::clicked, this, &GameWindow::setFillTool);
-    connect(ui->lineToolButton, &QPushButton::clicked, this, &GameWindow::setLineTool);
-    connect(ui->rectangleToolButton, &QPushButton::clicked, this, &GameWindow::setRectangleTool);
-    connect(ui->ellipseToolButton, &QPushButton::clicked, this, &GameWindow::setEllipseTool);
-
-    connect(ui->undoButton, &QPushButton::clicked, this, &GameWindow::undoAction);
-    connect(ui->redoButton, &QPushButton::clicked, this, &GameWindow::redoAction);
-
-    // --- Подключение кнопки отправки догадки ---
-    connect(ui->sendGuessButton, &QPushButton::clicked, this, &GameWindow::on_sendGuessButton_clicked);
-
     // Изначальная настройка UI (видимость кнопок и полей)
     setupGameUI(false);
 
     // --- Инициализация и настройка DoodleArea ---
     QSize doodleAreaSize(1121, 711); // Используем явно заданный размер для холста
     m_doodleArea = new DoodleArea(doodleAreaSize, this); // Создаем экземпляр DoodleArea, передавая GameWindow как родителя
-    setNoneTool(); // Устанавливаем инструмент по умолчанию "None"
 
-    // --- Настройка слайдера толщины пера ---
-    QSlider *penWidthSlider = ui->horizontalSliderPenWidth; // Получаем указатель на слайдер из UI
-    if (penWidthSlider) { // Проверяем, что слайдер найден
-        // Устанавливаем диапазон для слайдера (от 1 до 50 пикселей)
-        penWidthSlider->setRange(1, 50);
-        // Устанавливаем начальное значение слайдера на текущую толщину пера в DoodleArea
-        // (предполагается, что DoodleArea::getPenWidth() существует)
-        if (m_doodleArea) {
-            penWidthSlider->setValue(m_doodleArea->getPenWidth());
-        }
-        // Подключаем сигнал valueChanged слайдера к слоту setPenWidth в DoodleArea
-        connect(penWidthSlider, &QSlider::valueChanged, m_doodleArea, &DoodleArea::setPenWidth);
-    } else {
-        qWarning() << "Ошибка: Слайдер 'horizontalSliderPenWidth' не найден в UI. Проверьте objectName.";
-    }
+
+    // setActions(m_isDrawing);
+    setNoneTool(); // Если не художник, никаких инструментов
+    ui->toolBar->setHidden(true);
+
 
     // --- Добавление DoodleArea в контейнер UI ---
     QLayout *layout = ui->drawingAreaContainer->layout();
@@ -96,7 +71,12 @@ GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *p
     connect(m_doodleArea, &DoodleArea::drawingCommandGenerated,
             this, &GameWindow::sendDrawingCommand);
 
+    createActions();
+    createToolBars();
+    setWindowTitle(tr("Крокодил"));
+
     qDebug() << "Player:" << m_playerName << "isDrawing:" << m_isDrawing;
+
 }
 
 // Деструктор GameWindow
@@ -266,16 +246,19 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
         m_isDrawing = (drawer == m_playerName); // Определяем, является ли текущий игрок художником
+        setActions(m_isDrawing);
 
         m_doodleArea->clearImage(); // Всегда очищаем холст при начале раунда
 
         setupGameUI(m_isDrawing); // Настраиваем UI в зависимости от роли
 
+
         if (!m_isDrawing) {
             ui->wordLabel->setText("Угадайте что рисует " + drawer);
-            setNoneTool(); // Если не художник, никаких инструментов
+
         } else {
             setPencilTool(); // Если художник, по умолчанию карандаш
+            ui->toolBar->setVisible(true);
         }
     }
     else if (type == "yourTurn") {
@@ -304,7 +287,11 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
         ui->guessEdit->clear(); // Очищаем поле ввода догадок
     }
     else if (type == "roundEnd") {
-        setNoneTool(); // Отключаем инструменты
+        setActions(m_isDrawing);
+        setNoneTool(); // Если не художник, никаких инструментов
+        ui->toolBar->setHidden(true);
+
+
         ui->wordLabel->setText("Приготовились!"); // Сообщение о конце раунда
         QJsonObject scores = message["scores"].toObject();
         updateScoresTable(scores); // Обновляем очки
@@ -378,22 +365,10 @@ void GameWindow::processGameOver(const QJsonObject& scores) {
 
 // --- Настройка UI в зависимости от роли игрока (художник/угадывающий) ---
 void GameWindow::setupGameUI(bool isDrawer){
-    // Включаем/отключаем кнопки инструментов
-    ui->pencilToolButton->setEnabled(isDrawer);
-    ui->rubberToolButton->setEnabled(isDrawer);
-    ui->fillToolButton->setEnabled(isDrawer);
-    ui->lineToolButton->setEnabled(isDrawer);
-    ui->rectangleToolButton->setEnabled(isDrawer);
-    ui->ellipseToolButton->setEnabled(isDrawer);
-    // ui->textToolButton->setEnabled(isDrawer); // Если вы когда-нибудь добавите текст
-
-    ui->undoButton->setEnabled(isDrawer);
-    ui->redoButton->setEnabled(isDrawer);
 
     // Угадывание для НЕ-художника
     ui->guessEdit->setEnabled(!isDrawer);
     ui->sendGuessButton->setEnabled(!isDrawer);
-    ui->horizontalSliderPenWidth->setEnabled(isDrawer); // Включаем/отключаем слайдер
 
     if (!isDrawer){
         ui->wordLabel->setText("Угадывайте что рисуют!");
@@ -419,3 +394,158 @@ void GameWindow::sendDrawingPoints(const QVector<QPoint>& points)
     message["points"] = pointsArray;
     emit sendMessage(message);
 }
+
+
+
+void GameWindow::createActions(){
+
+    clearScreenAct = new QAction(tr("&Очистить изображение..."), this);
+    clearScreenAct->setShortcut(tr("Ctrl+L"));
+    connect(clearScreenAct, SIGNAL(triggered()), m_doodleArea, SLOT(clearImage()));
+
+
+
+    penColorAct = new QAction(QIcon(":/images/Color.png"), "Цвет", this);
+    connect(penColorAct, SIGNAL(triggered()), this, SLOT(penColor()));
+    penWidthAct = new QAction(QIcon(":/images/Width.png"), "Толщина линии", this);
+    connect(penWidthAct, SIGNAL(triggered()), this, SLOT(penWidth()));
+
+
+
+    fillAreaAct = new QAction(QIcon(":/images/fill.png"), "Заливка", this);
+    connect(fillAreaAct, SIGNAL(triggered()), this, SLOT(setFillTool()));
+
+    PencilAct = new QAction(QIcon(":/images/Pencil.png"), "Карандаш", this);
+    RubberAct = new QAction(QIcon(":/images/Rubber.png"), "Ластик", this);
+
+    lineAction = new QAction(QIcon(":/images/Line.png"), tr("&Прямая"), this);
+    rectangleAction = new QAction(QIcon(":/images/Rectangle.png"), tr("&Прямоугольник"), this);
+    ellipseAction = new QAction(QIcon(":/images/Ellipse.png"), tr("&Эллипс"), this);
+
+
+
+    undoActionBtn = new QAction(tr("&Undo"), this);
+    undoActionBtn->setShortcut(QKeySequence::Undo);
+    connect(undoActionBtn, &QAction::triggered, this, &GameWindow::undoAction);
+
+    redoActionBtn = new QAction(tr("&Redo"), this);
+    redoActionBtn->setShortcut(QKeySequence::Redo);
+    connect(redoActionBtn, &QAction::triggered, this, &GameWindow::redoAction);
+
+    QActionGroup *toolGroup = new QActionGroup(this);
+    toolGroup->addAction(PencilAct);
+    toolGroup->addAction(RubberAct);
+    toolGroup->addAction(fillAreaAct);
+    toolGroup->addAction(lineAction);
+    toolGroup->addAction(rectangleAction);
+    toolGroup->addAction(ellipseAction);
+
+    PencilAct->setCheckable(true);
+    RubberAct->setCheckable(true);
+    fillAreaAct->setCheckable(true);
+    lineAction->setCheckable(true);
+    rectangleAction->setCheckable(true);
+    ellipseAction->setCheckable(true);
+
+    PencilAct->setChecked(true);
+
+    connect(PencilAct, SIGNAL(triggered()), this, SLOT(setPencilTool()));
+    connect(RubberAct, SIGNAL(triggered()), this, SLOT(setRubberTool()));
+    connect(fillAreaAct, SIGNAL(triggered()), this, SLOT(setFillTool()));
+    connect(lineAction, &QAction::triggered, this, &GameWindow::setLineTool);
+    connect(rectangleAction, &QAction::triggered, this, &GameWindow::setRectangleTool);
+    connect(ellipseAction, &QAction::triggered, this, &GameWindow::setEllipseTool);
+
+
+    undoActionBtn->setShortcut(tr("Ctrl+Z"));
+    redoActionBtn->setShortcut(tr("Ctrl+Y"));
+}
+
+
+void GameWindow::createToolBars() {
+
+    addToolBar(Qt::RightToolBarArea, ui->toolBar);
+
+    ui->toolBar->addAction(PencilAct);
+    ui->toolBar->addAction(RubberAct);
+    ui->toolBar->addAction(fillAreaAct);
+    ui->toolBar->addAction(lineAction);
+    ui->toolBar->addAction(rectangleAction);
+    ui->toolBar->addAction(ellipseAction);
+
+    ui->toolBar->addSeparator();
+    ui->toolBar->addAction(penColorAct);
+    ui->toolBar->addAction(penWidthAct);
+}
+
+
+void GameWindow::updateBrushPreview(QLabel *label, int width, QColor color) {
+    int size = 60;
+    QImage image(size, size, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+
+    QPoint center(size / 2, size / 2);
+    painter.drawPoint(center);
+
+    painter.end();
+
+    label->setPixmap(QPixmap::fromImage(image)); // Преобразуем QImage в QPixmap
+}
+
+
+void GameWindow::penColor(){
+    QColor newColor = QColorDialog::getColor((m_doodleArea->penColor()));
+    if(newColor.isValid()){
+        m_doodleArea->setPenColor(newColor);
+    }
+}
+
+
+
+void GameWindow::penWidth() {
+    QDialog dialog(this);
+    dialog.setFixedSize(200,100);
+    dialog.setWindowTitle(tr("cooler_paint - Толщина кисти"));
+
+    QSlider *slider = new QSlider(Qt::Horizontal);
+    slider->setRange(1, 50);
+    slider->setValue(m_doodleArea->penWidth());
+
+    QLabel *previewLabel = new QLabel();
+    previewLabel->setAlignment(Qt::AlignCenter);
+    updateBrushPreview(previewLabel, m_doodleArea->penWidth(), m_doodleArea->penColor()); // Изначальное отображение
+
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    layout->addWidget(slider);
+    layout->addWidget(previewLabel);
+
+    QObject::connect(slider, &QSlider::valueChanged, this, [=](int value) {
+        updateBrushPreview(previewLabel, value, m_doodleArea->penColor());
+    });
+
+    QObject::connect(slider, &QSlider::valueChanged, m_doodleArea, &DoodleArea::setPenWidth);
+
+    dialog.exec();
+}
+
+void GameWindow::setActions(const bool &drawing){
+
+    penColorAct->setEnabled(drawing);
+    penWidthAct->setEnabled(drawing);
+    clearScreenAct->setEnabled(drawing);
+    fillAreaAct->setEnabled(drawing);
+    PencilAct->setEnabled(drawing);
+    RubberAct->setEnabled(drawing);
+    lineAction->setEnabled(drawing);
+    rectangleAction->setEnabled(drawing);
+    ellipseAction->setEnabled(drawing);
+
+    undoActionBtn->setEnabled(drawing);
+    redoActionBtn->setEnabled(drawing);
+
+}
+

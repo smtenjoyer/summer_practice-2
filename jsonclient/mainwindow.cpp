@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    setWindowTitle(tr("Регистрация"));
 
     connect(m_socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
     connect(m_socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
