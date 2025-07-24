@@ -199,69 +199,23 @@ void GameWindow::processServerMessage(const QJsonObject &message) {
     if (type == "playerJoined") {
         QString Name = message["name"].toString();
         QJsonObject scores = message["scores"].toObject();
+        qDebug() << "CLIENT (" << m_playerName << "): Processing 'playerJoined' for:" << Name << ". Full scores received:" << scores;
 
-        int playerRow = -1;
-        for (int row = 0; row < ui->scoresTable->rowCount(); ++row) {
-            QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
-            if (nameItem && nameItem->text() == Name) {
-                playerRow = row;
-                break;
-            }
-        }
-
-        if (playerRow == -1) {
-            int rowCount = ui->scoresTable->rowCount();
-            ui->scoresTable->insertRow(rowCount);
-            playerRow = rowCount;
-            QTableWidgetItem *item1 = new QTableWidgetItem(Name);
-            QTableWidgetItem *item2 = new QTableWidgetItem("0");
-            ui->scoresTable->setItem(playerRow, 0, item1);
-            ui->scoresTable->setItem(playerRow, 1, item2);
-        }
-
-        // Глобальный метод обновления очков (для всех игроков, включая только что присоединившегося)
-        for (int row = 0; row < ui->scoresTable->rowCount(); ++row) {
-            QTableWidgetItem* nameItem = ui->scoresTable->item(row, 0);
-            if (nameItem) {
-                QString playerName = nameItem->text();
-                if (scores.contains(playerName)) {
-                    int score = scores[playerName].toInt();
-                    QTableWidgetItem* scoreItem = ui->scoresTable->item(row, 1);
-                    if (scoreItem) {
-                        scoreItem->setText(QString::number(score));
-                    } else {
-                        scoreItem = new QTableWidgetItem(QString::number(score));
-                        ui->scoresTable->setItem(row, 1, scoreItem);
-                    }
-                } else {
-                    QTableWidgetItem* scoreItem = ui->scoresTable->item(row, 1);
-                    if (scoreItem) {
-                        scoreItem->setText("0"); // Если игрока нет в текущих очках, сбросить
-                    }
-                }
-            }
-        }
+        // Вместо всей предыдущей логики обновления таблицы:
+        updateAllPlayersTable(scores); // Используем новую унифицированную функцию
     }
     // НОВЫЙ БЛОК: Обработка полного списка игроков при подключении
     else if (type == "playerList") { // Или "initialState", как решите на сервере
         QJsonArray playersArray = message["players"].toArray();
-        ui->scoresTable->setRowCount(0); // Очищаем таблицу перед заполнением
+        qDebug() << "CLIENT (" << m_playerName << "): Processing 'playerList'. Players count:" << playersArray.size();
 
+        QJsonObject scoresFromList;
         for (const QJsonValue& value : playersArray) {
             QJsonObject playerObj = value.toObject();
-            QString playerName = playerObj["name"].toString();
-            int playerScore = playerObj["score"].toInt();
-
-            int rowCount = ui->scoresTable->rowCount();
-            ui->scoresTable->insertRow(rowCount);
-
-            QTableWidgetItem *nameItem = new QTableWidgetItem(playerName);
-            QTableWidgetItem *scoreItem = new QTableWidgetItem(QString::number(playerScore));
-
-            ui->scoresTable->setItem(rowCount, 0, nameItem);
-            ui->scoresTable->setItem(rowCount, 1, scoreItem);
+            scoresFromList[playerObj["name"].toString()] = playerObj["score"].toInt();
         }
-        qDebug() << "Получен и обновлен полный список игроков.";
+        updateAllPlayersTable(scoresFromList); // Преобразуем и обновляем
+        qDebug() << "CLIENT (" << m_playerName << "): Получен и обновлен полный список игроков.";
     }
     else if (type == "roundStart") {
         QString drawer = message["drawer"].toString();
@@ -576,3 +530,28 @@ void GameWindow::setActions(const bool &drawing){
 
 }
 
+void GameWindow::updateAllPlayersTable(const QJsonObject& scores) {
+    ui->scoresTable->setRowCount(0); // Полностью очищаем таблицу
+
+
+    QList<QPair<QString, int>> playersData;
+    for (auto it = scores.begin(); it != scores.end(); ++it) {
+        playersData.append({it.key(), it.value().toInt()});
+    }
+
+    // Опционально: отсортировать игроков по очкам или имени
+     std::sort(playersData.begin(), playersData.end(), [](const QPair<QString, int>& a, const QPair<QString, int>& b){
+         return a.first < b.first; // Сортировка по имени
+     });
+
+    ui->scoresTable->setRowCount(playersData.size()); // Устанавливаем нужное количество строк
+
+    for (int i = 0; i < playersData.size(); ++i) {
+        QTableWidgetItem *nameItem = new QTableWidgetItem(playersData[i].first);
+        QTableWidgetItem *scoreItem = new QTableWidgetItem(QString::number(playersData[i].second));
+
+        ui->scoresTable->setItem(i, 0, nameItem);
+        ui->scoresTable->setItem(i, 1, scoreItem);
+    }
+    qDebug() << "CLIENT (" << m_playerName << "): Scores table fully updated.";
+}

@@ -78,6 +78,9 @@ public slots:
 
 
 private:
+    //
+    void updateAllPlayersTable(const QJsonObject& scores);
+    //
     Ui::GameWindow *ui;
     QTcpSocket* m_socket;
     QString m_playerName;
