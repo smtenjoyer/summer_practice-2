@@ -90,7 +90,10 @@ GameWindow::~GameWindow()
 void GameWindow::setPencilTool() {
     if (m_doodleArea) {
         m_doodleArea->setTool(DoodleArea::Pencil);
-        m_doodleArea->setCursor(Qt::CrossCursor); // Меняем курсор на крестик
+        QPixmap pixmap(":/images/Pencil.png");
+        QPixmap scaledPixmap = pixmap.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QCursor newCursor(scaledPixmap, 0, scaledPixmap.size().height());
+        m_doodleArea->setCursor(newCursor);
         qDebug() << "Tool set to Pencil";
     }
 }
@@ -98,7 +101,10 @@ void GameWindow::setPencilTool() {
 void GameWindow::setRubberTool() {
     if (m_doodleArea) {
         m_doodleArea->setTool(DoodleArea::Rubber);
-        m_doodleArea->setCursor(Qt::CrossCursor); // Меняем курсор на крестик
+        QPixmap pixmap(":/images/Rubber.png");
+        QPixmap scaledPixmap = pixmap.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QCursor newCursor(scaledPixmap, 0);
+        m_doodleArea->setCursor(newCursor);
         qDebug() << "Tool set to Rubber";
     }
 }
@@ -106,7 +112,10 @@ void GameWindow::setRubberTool() {
 void GameWindow::setFillTool() {
     if (m_doodleArea) {
         m_doodleArea->setTool(DoodleArea::Fill);
-        m_doodleArea->setCursor(Qt::CrossCursor);
+        QPixmap pixmap(":/images/fill.png");
+        QPixmap scaledPixmap = pixmap.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QCursor newCursor(scaledPixmap,0);
+        m_doodleArea->setCursor(newCursor);
         qDebug() << "Tool set to Fill";
     }
 }
@@ -286,6 +295,10 @@ void GameWindow::processGameOver(const QJsonObject& scores) {
         sortedScores.append(qMakePair(playerName, playerScore));
     }
 
+
+    setNoneTool();
+    ui->toolBar->setHidden(true);
+
     // Сортируем игроков по очкам (по убыванию)
     std::sort(sortedScores.begin(), sortedScores.end(), [](const QPair<QString, int>& a, const QPair<QString, int>& b) {
         return a.second > b.second;
@@ -373,36 +386,48 @@ void GameWindow::createActions(){
 
     clearScreenAct = new QAction(tr("&О"), this);
     clearScreenAct->setShortcut(tr("Ctrl+L"));
+    clearScreenAct->setToolTip(tr("Очистить экран (Ctrl+L)")); // Tooltip
     connect(clearScreenAct, SIGNAL(triggered()), m_doodleArea, SLOT(clearImage()));
 
 
 
     penColorAct = new QAction(QIcon(":/images/Color.png"), "Цвет", this);
+    penColorAct->setToolTip(tr("Выбрать цвет пера")); // Tooltip
     connect(penColorAct, SIGNAL(triggered()), this, SLOT(penColor()));
+
     penWidthAct = new QAction(QIcon(":/images/Width.png"), "Толщина линии", this);
+    penWidthAct->setToolTip(tr("Изменить толщину линии")); // Tooltip
     connect(penWidthAct, SIGNAL(triggered()), this, SLOT(penWidth()));
 
 
 
     fillAreaAct = new QAction(QIcon(":/images/fill.png"), "Заливка", this);
+    fillAreaAct->setToolTip(tr("Инструмент заливки")); // Tooltip
     connect(fillAreaAct, SIGNAL(triggered()), this, SLOT(setFillTool()));
 
     PencilAct = new QAction(QIcon(":/images/Pencil.png"), "Карандаш", this);
+    PencilAct->setToolTip(tr("Инструмент карандаш")); // Tooltip
+
     RubberAct = new QAction(QIcon(":/images/Rubber.png"), "Ластик", this);
+    RubberAct->setToolTip(tr("Инструмент ластик")); // Tooltip
 
     lineAction = new QAction(QIcon(":/images/Line.png"), tr("&Прямая"), this);
-    rectangleAction = new QAction(QIcon(":/images/Rectangle.png"), tr("&Прямоугольник"), this);
-    ellipseAction = new QAction(QIcon(":/images/Ellipse.png"), tr("&Эллипс"), this);
+    lineAction->setToolTip(tr("Инструмент прямая линия")); // Tooltip
 
+    rectangleAction = new QAction(QIcon(":/images/Rectangle.png"), tr("&Прямоугольник"), this);
+    rectangleAction->setToolTip(tr("Инструмент прямоугольник")); // Tooltip
+
+    ellipseAction = new QAction(QIcon(":/images/Ellipse.png"), tr("&Эллипс"), this);
+    ellipseAction->setToolTip(tr("Инструмент эллипс")); // Tooltip
 
 
     undoActionBtn = new QAction(tr("&U"), this);
     undoActionBtn->setShortcut(QKeySequence::Undo);
-    connect(undoActionBtn, &QAction::triggered, this, &GameWindow::undoAction);
+    undoActionBtn->setToolTip(tr("Отменить действие (Ctrl+Z)")); // Tooltip
 
     redoActionBtn = new QAction(tr("&R"), this);
     redoActionBtn->setShortcut(QKeySequence::Redo);
-    connect(redoActionBtn, &QAction::triggered, this, &GameWindow::redoAction);
+    redoActionBtn->setToolTip(tr("Повторить действие (Ctrl+Y)")); // Tooltip
 
     QActionGroup *toolGroup = new QActionGroup(this);
     toolGroup->addAction(PencilAct);
