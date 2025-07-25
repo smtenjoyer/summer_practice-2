@@ -130,7 +130,7 @@ void myserver::processMessage(const QJsonObject &message, QTcpSocket *sender) {
         }
         playerListMsg["players"] = playersArray;
         sendToClient(sender, playerListMsg);
-        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 1) {                      //!!!!!!!
+        if (m_gameState == WaitingForPlayers && m_clientNames.size() >= 2) {                      //!!!!!!!
             startGame();
         }
     }
