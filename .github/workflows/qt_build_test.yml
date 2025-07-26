@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Apt Install)
+name: Build and Test Qt Project on Linux (Robust Apt Install)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -19,98 +19,89 @@ jobs:
     - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
       uses: actions/checkout@v4
 
-    - name: Install Qt and Build Tools (via Apt for Ubuntu 24.04) # Шаг 2: Установка Qt и инструментов через apt
+    - name: Configure Repositories and Install Qt/Build Tools (via Apt for Ubuntu 24.04) # Шаг 2: Настройка репозиториев и установка Qt/инструментов
       run: |
         echo "Updating apt packages..."
         sudo apt update -y
+        
+        # Добавляем репозиторий 'universe', где часто находятся dev-пакеты Qt
+        echo "Adding 'universe' repository..."
+        sudo apt install -y software-properties-common # Убедимся, что инструмент для добавления репозиториев установлен
+        sudo add-apt-repository universe -y # Добавляем universe репозиторий
+        
+        echo "Re-updating apt packages after adding repository..."
+        sudo apt update -y # Обновляем список пакетов после добавления репозитория
+        
         echo "Installing build essentials and Qt5 libraries for Ubuntu 24.04..."
         # build-essential для компилятора g++ и make
         # qt5-qmake для генерации Makefile из .pro файлов
         # libqt5core5-dev, libqt5gui5-dev, libqt5widgets5-dev, libqt5network5-dev - основные модули Qt5
-        # (core, gui, widgets, network)
+        # (core, gui, widgets, network). Теперь они должны быть доступны после добавления 'universe'.
         # libgl1-mesa-dev - для поддержки OpenGL, часто требуется для графических Qt-приложений
         sudo apt install -y build-essential qt5-qmake libqt5core5-dev libqt5gui5-dev libqt5widgets5-dev libqt5network5-dev libgl1-mesa-dev
 
-        # Установка Qt Creator IDE не нужна для сборки в CI, но если бы она была нужна:
-        # sudo apt install -y qtcreator
-        
         echo "Installed Qt and build tools."
 
     - name: Configure Qt Projects # Шаг 3: Настройка проектов с помощью qmake
       run: |
         echo "Configuring server project..."
-        cd server # Переходим в папку server
-        qmake server.pro # Генерируем Makefile для server.pro
-        cd .. # Возвращаемся в корневую папку рабочего пространства
+        cd server
+        qmake server.pro
+        cd ..
 
         echo "Configuring client project..."
-        cd client # Переходим в папку client
-        qmake client.pro # Генерируем Makefile для client.pro
-        cd .. # Возвращаемся в корневую папку рабочего пространства
+        cd client
+        qmake client.pro
+        cd ..
 
     - name: Build Server # Шаг 4: Сборка серверного приложения
       run: |
         echo "Building server..."
-        cd server # Переходим в папку server
-        make -j$(nproc) # Компилируем сервер, используем все доступные ядра CPU
-        # После make, исполняемый файл будет называться 'server' (по имени .pro файла)
-        # Перемещаем его на уровень выше и переименовываем для удобства
+        cd server
+        make -j$(nproc)
         mv server ../server_app
-        cd .. # Возвращаемся в корневую папку
+        cd ..
 
     - name: Build Client # Шаг 5: Сборка клиентского приложения
       run: |
         echo "Building client..."
-        cd client # Переходим в папку client
-        make -j$(nproc) # Компилируем клиент, используем все доступные ядра CPU
-        # После make, исполняемый файл будет называться 'client'
-        # Перемещаем его на уровень выше и переименовываем для удобства
+        cd client
+        make -j$(nproc)
         mv client ../client_app
-        cd .. # Возвращаемся в корневую папку
+        cd ..
 
     - name: Verify Executables # Шаг 6: Проверка наличия исполняемых файлов
       run: |
         echo "Verifying compiled executables..."
-        ls -l # Выводим список файлов в текущей директории для отладки
-        # Проверяем существование скомпилированных приложений
+        ls -l
         if [ -f server_app ]; then
           echo "Server application (server_app) found."
         else
           echo "Server application (server_app) NOT found!"
-          exit 1 # Если файл не найден, задача завершается с ошибкой
+          exit 1
         fi
         if [ -f client_app ]; then
           echo "Client application (client_app) found."
         else
           echo "Client application (client_app) NOT found!"
-          exit 1 # Если файл не найден, задача завершается с ошибкой
+          exit 1
         fi
 
-    # - name: Run Basic Test (Optional) # Опциональный шаг для базового запуска приложений
-    #   # Закомментирован, так как GUI-приложения могут некорректно работать в CI без графической среды.
+    # - name: Run Basic Test (Optional)
     #   run: |
     #     echo "Attempting to run server and client..."
-    #     # Запускаем сервер в фоновом режиме, чтобы он не блокировал выполнение
     #     ./server_app &
-    #     SERVER_PID=$! # Запоминаем ID процесса сервера
-    #     echo "Server started with PID $SERVER_PID"
-    #     sleep 2 # Даем серверу время для инициализации
-    #
-    #     # Запускаем клиент. '|| true' позволяет шагу завершиться успешно, даже если клиент выдаст ошибку
-    #     # (например, из-за отсутствия графики), но при этом запустится.
+    #     SERVER_PID=$!
+    #     sleep 2
     #     ./client_app "testuser" || true
-    #     echo "Client attempted to run."
-    #     sleep 1 # Даем клиенту немного времени
-    #
-    #     # Завершаем процесс сервера
-    #     kill $SERVER_PID || true # '|| true' на случай, если сервер уже завершился
+    #     sleep 1
+    #     kill $SERVER_PID || true
     #     echo "Server stopped."
 
     - name: Upload Build Artifacts (Optional) # Шаг 7 (Опционально): Сохранение скомпилированных файлов как артефактов
-      # Эти артефакты можно будет скачать со страницы выполнения экшена на GitHub.
-      uses: actions/upload-artifact@v4 # Используем официальный экшен для загрузки артефактов
+      uses: actions/upload-artifact@v4
       with:
-        name: Qt_Apps_Linux_Build # Имя архива с артефактами
+        name: Qt_Apps_Linux_Build
         path: |
-          ./client_app # Путь к исполняемому файлу клиента
-          ./server_app # Путь к исполняемому файлу сервера
+          ./client_app
+          ./server_app
