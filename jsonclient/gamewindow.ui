@@ -144,7 +144,7 @@ color: rgb(0, 0, 0);</string>
        <font>
         <pointsize>20</pointsize>
         <kerning>true</kerning>
-        <fontweight>Black</fontweight>
+       
        </font>
       </property>
       <property name="layoutDirection">
