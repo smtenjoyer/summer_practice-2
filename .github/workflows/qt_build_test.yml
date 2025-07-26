@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Project Root Fix)
+name: Build and Test Qt Project on Linux (No Redundant CD)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -16,13 +16,16 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      # После этого шага, ваши файлы уже будут в корне рабочей директории:
+      # /home/runner/work/summer_practice-2/summer_practice-2/
+      # где summer_practice-2/ это сам репозиторий, а внутри уже server/ и client/
 
-    - name: Change to Project Root Directory # НОВОЕ: Переходим в корневую директорию проекта
+    - name: Verify Working Directory (for debugging)
       run: |
-        echo "Changing directory to summer_practice-2/"
-        cd summer_practice-2/
-        pwd # Для отладки: выведем текущую директорию
-        ls -F # Для отладки: выведем содержимое текущей директории
+        echo "Current working directory:"
+        pwd
+        echo "Contents of current directory:"
+        ls -F
 
     - name: Install Build Essentials and Dependencies
       run: |
@@ -37,8 +40,6 @@ jobs:
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
-        # Важно: --outputdir теперь будет относительно новой текущей директории
-        # Но $RUNNER_TEMP всегда абсолютный, так что это нормально.
         aqt install-qt linux desktop 5.15.2 gcc_64 --outputdir "$RUNNER_TEMP/Qt"
 
         echo "QT_PATH=$RUNNER_TEMP/Qt/5.15.2/gcc_64" >> $GITHUB_ENV
@@ -51,13 +52,13 @@ jobs:
     - name: Configure Qt Projects
       run: |
         echo "Configuring server project..."
-        # Теперь `server` должен быть доступен
+        # Теперь `server` должен быть доступен напрямую
         cd server
         qmake server.pro
         cd ..
 
         echo "Configuring client project..."
-        # Теперь `client` должен быть доступен
+        # Теперь `client` должен быть доступен напрямую
         cd client
         qmake client.pro
         cd ..
@@ -67,7 +68,6 @@ jobs:
         echo "Building server..."
         cd server
         make -j$(nproc)
-        # Убедитесь, что server_app создается в корне репозитория, где его легко найти
         mv server ../server_app
         cd ..
 
@@ -76,14 +76,12 @@ jobs:
         echo "Building client..."
         cd client
         make -j$(nproc)
-        # Убедитесь, что client_app создается в корне репозитория, где его легко найти
         mv client ../client_app
         cd ..
 
     - name: Verify Executables
       run: |
         echo "Verifying compiled executables..."
-        # Эти команды теперь запускаются из summer_practice-2/
         ls -l
         if [ -f server_app ]; then
           echo "Server application (server_app) found."
