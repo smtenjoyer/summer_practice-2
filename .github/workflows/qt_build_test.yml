@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (LD_LIBRARY_PATH Fix)
+name: Build and Test Qt Project on Linux (Project Root Fix)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -17,6 +17,13 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Change to Project Root Directory # НОВОЕ: Переходим в корневую директорию проекта
+      run: |
+        echo "Changing directory to summer_practice-2/"
+        cd summer_practice-2/
+        pwd # Для отладки: выведем текущую директорию
+        ls -F # Для отладки: выведем содержимое текущей директории
+
     - name: Install Build Essentials and Dependencies
       run: |
         echo "Updating apt packages..."
@@ -30,29 +37,27 @@ jobs:
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
+        # Важно: --outputdir теперь будет относительно новой текущей директории
+        # Но $RUNNER_TEMP всегда абсолютный, так что это нормально.
         aqt install-qt linux desktop 5.15.2 gcc_64 --outputdir "$RUNNER_TEMP/Qt"
 
-        # Правильно добавляем пути к переменным окружения для текущего шага.
-        # Этот подход использует GITHUB_ENV для сохранения переменных между шагами.
         echo "QT_PATH=$RUNNER_TEMP/Qt/5.15.2/gcc_64" >> $GITHUB_ENV
         echo "PATH=$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin:$PATH" >> $GITHUB_ENV
-        
-        # Корректное добавление к LD_LIBRARY_PATH
-        # Используем подстановку по умолчанию, чтобы избежать "ambiguous redirect"
         echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib" >> $GITHUB_ENV
 
-        # Выведем PATH и LD_LIBRARY_PATH для отладки, они будут доступны в следующих шагах
         echo "PATH (after setting in GITHUB_ENV): $PATH"
         echo "LD_LIBRARY_PATH (after setting in GITHUB_ENV): $LD_LIBRARY_PATH"
 
     - name: Configure Qt Projects
       run: |
         echo "Configuring server project..."
+        # Теперь `server` должен быть доступен
         cd server
         qmake server.pro
         cd ..
 
         echo "Configuring client project..."
+        # Теперь `client` должен быть доступен
         cd client
         qmake client.pro
         cd ..
@@ -62,6 +67,7 @@ jobs:
         echo "Building server..."
         cd server
         make -j$(nproc)
+        # Убедитесь, что server_app создается в корне репозитория, где его легко найти
         mv server ../server_app
         cd ..
 
@@ -70,12 +76,14 @@ jobs:
         echo "Building client..."
         cd client
         make -j$(nproc)
+        # Убедитесь, что client_app создается в корне репозитория, где его легко найти
         mv client ../client_app
         cd ..
 
     - name: Verify Executables
       run: |
         echo "Verifying compiled executables..."
+        # Эти команды теперь запускаются из summer_practice-2/
         ls -l
         if [ -f server_app ]; then
           echo "Server application (server_app) found."
