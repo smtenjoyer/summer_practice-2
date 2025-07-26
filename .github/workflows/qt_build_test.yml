@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux
+name: Build and Test Qt Project on Linux (Apt Install)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -12,28 +12,31 @@ on:
 jobs:
   build_linux:
     # Операционная система, на которой будет выполняться задача
-    runs-on: ubuntu-latest # Используем последнюю версию Ubuntu LTS
+    runs-on: ubuntu-latest # Используем последнюю версию Ubuntu LTS (сейчас это 24.04 Noble)
 
     # Шаги, которые будут выполняться
     steps:
     - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
-      uses: actions/checkout@v4 # Используем официальный экшен для клонирования репозитория
+      uses: actions/checkout@v4
 
-    - name: Set up Qt # Шаг 2: Установка Qt через актуальный action
-      uses: jurplel/setup-qt@v3 # <--- Убедитесь, что здесь именно jurplel/setup-qt@v3
-      with:
-        version: '5.15.2' # Указываем нужную версию Qt (LTS)
-
-    - name: Install Build Essentials and Dependencies # Шаг 3: Установка базовых инструментов и зависимостей
+    - name: Install Qt and Build Tools (via Apt for Ubuntu 24.04) # Шаг 2: Установка Qt и инструментов через apt
       run: |
         echo "Updating apt packages..."
-        sudo apt update -y # Обновляем список пакетов
-        echo "Installing build essentials and other core libraries..."
-        # build-essential предоставляет g++ и make
-        # libgl1-mesa-dev необходим для поддержки OpenGL, часто нужен для графических приложений Qt
-        sudo apt install -y build-essential libgl1-mesa-dev
+        sudo apt update -y
+        echo "Installing build essentials and Qt5 libraries for Ubuntu 24.04..."
+        # build-essential для компилятора g++ и make
+        # qt5-qmake для генерации Makefile из .pro файлов
+        # libqt5core5-dev, libqt5gui5-dev, libqt5widgets5-dev, libqt5network5-dev - основные модули Qt5
+        # (core, gui, widgets, network)
+        # libgl1-mesa-dev - для поддержки OpenGL, часто требуется для графических Qt-приложений
+        sudo apt install -y build-essential qt5-qmake libqt5core5-dev libqt5gui5-dev libqt5widgets5-dev libqt5network5-dev libgl1-mesa-dev
 
-    - name: Configure Qt Projects # Шаг 4: Настройка проектов с помощью qmake
+        # Установка Qt Creator IDE не нужна для сборки в CI, но если бы она была нужна:
+        # sudo apt install -y qtcreator
+        
+        echo "Installed Qt and build tools."
+
+    - name: Configure Qt Projects # Шаг 3: Настройка проектов с помощью qmake
       run: |
         echo "Configuring server project..."
         cd server # Переходим в папку server
@@ -45,27 +48,27 @@ jobs:
         qmake client.pro # Генерируем Makefile для client.pro
         cd .. # Возвращаемся в корневую папку рабочего пространства
 
-    - name: Build Server # Шаг 5: Сборка серверного приложения
+    - name: Build Server # Шаг 4: Сборка серверного приложения
       run: |
         echo "Building server..."
         cd server # Переходим в папку server
-        make # Компилируем сервер
+        make -j$(nproc) # Компилируем сервер, используем все доступные ядра CPU
         # После make, исполняемый файл будет называться 'server' (по имени .pro файла)
         # Перемещаем его на уровень выше и переименовываем для удобства
         mv server ../server_app
         cd .. # Возвращаемся в корневую папку
 
-    - name: Build Client # Шаг 6: Сборка клиентского приложения
+    - name: Build Client # Шаг 5: Сборка клиентского приложения
       run: |
         echo "Building client..."
         cd client # Переходим в папку client
-        make # Компилируем клиент
+        make -j$(nproc) # Компилируем клиент, используем все доступные ядра CPU
         # После make, исполняемый файл будет называться 'client'
         # Перемещаем его на уровень выше и переименовываем для удобства
         mv client ../client_app
         cd .. # Возвращаемся в корневую папку
 
-    - name: Verify Executables # Шаг 7: Проверка наличия исполняемых файлов
+    - name: Verify Executables # Шаг 6: Проверка наличия исполняемых файлов
       run: |
         echo "Verifying compiled executables..."
         ls -l # Выводим список файлов в текущей директории для отладки
@@ -103,7 +106,7 @@ jobs:
     #     kill $SERVER_PID || true # '|| true' на случай, если сервер уже завершился
     #     echo "Server stopped."
 
-    - name: Upload Build Artifacts (Optional) # Шаг 8 (Опционально): Сохранение скомпилированных файлов как артефактов
+    - name: Upload Build Artifacts (Optional) # Шаг 7 (Опционально): Сохранение скомпилированных файлов как артефактов
       # Эти артефакты можно будет скачать со страницы выполнения экшена на GitHub.
       uses: actions/upload-artifact@v4 # Используем официальный экшен для загрузки артефактов
       with:
