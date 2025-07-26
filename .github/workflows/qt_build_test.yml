@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (No Redundant CD)
+name: Build and Test Qt Project on Linux (Directory Debug)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -16,16 +16,14 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      # После этого шага, ваши файлы уже будут в корне рабочей директории:
-      # /home/runner/work/summer_practice-2/summer_practice-2/
-      # где summer_practice-2/ это сам репозиторий, а внутри уже server/ и client/
 
-    - name: Verify Working Directory (for debugging)
+    - name: Debug Working Directory and Contents # НОВЫЙ ШАГ: Выводим содержимое для отладки
       run: |
         echo "Current working directory:"
         pwd
         echo "Contents of current directory:"
-        ls -F
+        ls -R # Используем ls -R для рекурсивного вывода содержимого
+        echo "--- End of directory listing ---"
 
     - name: Install Build Essentials and Dependencies
       run: |
@@ -52,13 +50,13 @@ jobs:
     - name: Configure Qt Projects
       run: |
         echo "Configuring server project..."
-        # Теперь `server` должен быть доступен напрямую
-        cd server
+        # Здесь нам нужно будет изменить `cd server` на правильный путь,
+        # как только мы узнаем его из вывода `ls -R`
+        cd server # Это строка, которая сейчас вызывает ошибку
         qmake server.pro
         cd ..
 
         echo "Configuring client project..."
-        # Теперь `client` должен быть доступен напрямую
         cd client
         qmake client.pro
         cd ..
