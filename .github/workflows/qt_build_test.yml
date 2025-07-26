@@ -1,0 +1,99 @@
+# Имя рабочего процесса, отображаемое на GitHub Actions
+name: Build and Test Qt Project on Linux
+
+# События, которые запускают этот рабочий процесс
+on:
+  push:
+    branches: [ main, master ] # Запуск при коммитах в ветки main или master
+  pull_request:
+    branches: [ main, master ] # Запуск при пулл-реквестах в ветки main или master
+
+# Определяем задачи (jobs)
+jobs:
+  build_linux:
+    # Операционная система, на которой будет выполняться задача
+    runs-on: ubuntu-latest # Используем последнюю версию Ubuntu LTS
+
+    # Шаги, которые будут выполняться
+    steps:
+    - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
+      uses: actions/checkout@v4
+
+    - name: Install Qt and Build Tools # Шаг 2: Установка необходимых пакетов
+      run: |
+        echo "Updating apt packages..."
+        sudo apt update -y
+        echo "Installing build essentials and Qt5 libraries..."
+        # Устанавливаем базовые инструменты для сборки C++, а также Qt Creator, основные dev-файлы Qt5
+        # и модуль для работы с сетью (qt5-network-dev), который нужен для вашего проекта.
+        sudo apt install -y build-essential qtcreator qtbase5-dev qt5-qmake qt5-default qt5-network-dev libgl1-mesa-dev
+        # В вашем проекте используются только базовые модули и сеть, поэтому дополнительных не нужно.
+        # Если в будущем добавите, например, SVG-изображения, нужно будет добавить 'qt5-svg-dev'.
+
+    - name: Build Server # Шаг 3: Сборка серверного приложения
+      run: |
+        echo "Building server..."
+        cd server # Переходим в папку server
+        qmake server.pro # Генерируем Makefile для server.pro
+        make # Компилируем серверное приложение
+        mv server ../server_app # Перемещаем скомпилированный бинарник на уровень выше и переименовываем
+        cd .. # Возвращаемся в корневую папку
+
+    - name: Build Client # Шаг 4: Сборка клиентского приложения
+      run: |
+        echo "Building client..."
+        cd client # Переходим в папку client
+        qmake client.pro # Генерируем Makefile для client.pro
+        make # Компилируем клиентское приложение
+        mv client ../client_app # Перемещаем скомпилированный бинарник на уровень выше и переименовываем
+        cd .. # Возвращаемся в корневую папку
+
+    - name: Verify Executables # Шаг 5: Проверка наличия исполняемых файлов
+      run: |
+        echo "Verifying compiled executables..."
+        ls -l # Выводим список файлов, чтобы убедиться
+        if [ -f server_app ]; then
+          echo "Server application (server_app) found."
+        else
+          echo "Server application (server_app) NOT found!"
+          exit 1 # Завершаем с ошибкой
+        fi
+        if [ -f client_app ]; then
+          echo "Client application (client_app) found."
+        else
+          echo "Client application (client_app) NOT found!"
+          exit 1 # Завершаем с ошибкой
+        fi
+
+    # - name: Run Basic Test (Optional) # Шаг 6 (Опционально): Базовый запуск сервера и клиента
+    #   # Этот шаг пытается запустить сервер и клиент для очень базовой проверки.
+    #   # Для более глубокого тестирования потребовались бы Unit-тесты или более сложная логика.
+    #   run: |
+    #     echo "Attempting to run server and client..."
+    #     # Запускаем сервер в фоновом режиме
+    #     ./server_app &
+    #     SERVER_PID=$! # Запоминаем PID сервера
+    #     echo "Server started with PID $SERVER_PID"
+    #     sleep 2 # Даем серверу время для запуска
+    #
+    #     # Запускаем клиент
+    #     # Внимание: GUI-приложения в GitHub Actions не отображаются на экране.
+    #     # Этот запуск лишь проверяет, что клиент не падает сразу.
+    #     # Если клиент требует активного окна, он может завершиться ошибкой.
+    #     ./client_app "testuser" || true # '|| true' позволяет не завершать весь job, если клиент выдаст ошибку, но запустится.
+    #     echo "Client attempted to run."
+    #     sleep 1 # Даем клиенту немного времени
+    #
+    #     # Завершаем сервер
+    #     kill $SERVER_PID || true # Убиваем сервер, '|| true' на случай, если он уже завершился
+    #     echo "Server stopped."
+
+    - name: Upload Build Artifacts (Optional) # Шаг 7 (Опционально): Сохранение скомпилированных файлов
+      # Позволяет скачать скомпилированные бинарники после успешной сборки
+      # из вкладки "Summary" для вашего рабочего процесса на GitHub.
+      uses: actions/upload-artifact@v4
+      with:
+        name: Qt_Apps_Linux_Build
+        path: |
+          ./client_app
+          ./server_app
