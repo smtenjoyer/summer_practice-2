@@ -5,7 +5,7 @@ myserver::myserver(QObject *parent) : QTcpServer(parent),
     m_gameState(WaitingForPlayers),
     m_currentRound(0)
 {
-    m_words = QStringList()  = {"Крокодил", "Самолет", "Малыш Йода", "Яблоко", "Программист", "Слон"};
+    m_words = QStringList::fromList = ({"Крокодил", "Самолет", "Малыш Йода", "Яблоко", "Программист", "Слон"});
     connect(&m_roundTimer, &QTimer::timeout, this, &myserver::onRoundTimerTimeout);
 }
 
