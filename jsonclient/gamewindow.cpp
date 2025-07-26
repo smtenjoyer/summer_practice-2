@@ -13,7 +13,7 @@
 #include <QTableWidgetItem> // Для QTableWidgetItem
 
 // Убедитесь, что DoodleArea.h находится по правильному пути
-#include "DoodleArea.h"
+#include "doodleArea.h"
 
 // Конструктор GameWindow
 GameWindow::GameWindow(QTcpSocket* socket, const QString& playerName, QWidget *parent) :
