@@ -1,12 +1,12 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Direct Qt Install)
+name: Build and Test Qt Project on Linux
 
 # События, которые запускают этот рабочий процесс
 on:
   push:
     branches: [ main, master ] # Запуск при коммитах в ветки main или master
   pull_request:
-    branches: [ main, master ] # Запуск при создании/обновлении Pull Request в 'main' или 'master'
+    branches: [ main, master ] # Запуск при пулл-реквестах в ветки main или master
 
 # Определяем задачи (jobs)
 jobs:
@@ -17,142 +17,97 @@ jobs:
     # Шаги, которые будут выполняться
     steps:
     - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4 # Используем официальный экшен для клонирования репозитория
 
-    - name: Install Build Essentials and Dependencies # Шаг 2: Установка базовых инструментов и зависимостей
+    - name: Set up Qt # Шаг 2: Установка Qt через актуальный action
+      uses: jurplel/setup-qt@v3 # <--- Убедитесь, что здесь именно jurplel/setup-qt@v3
+      with:
+        version: '5.15.2' # Указываем нужную версию Qt (LTS)
+
+    - name: Install Build Essentials and Dependencies # Шаг 3: Установка базовых инструментов и зависимостей
       run: |
         echo "Updating apt packages..."
-        sudo apt update -y
+        sudo apt update -y # Обновляем список пакетов
         echo "Installing build essentials and other core libraries..."
-        sudo apt install -y build-essential libgl1-mesa-dev # libgl1-mesa-dev для поддержки OpenGL
-
-    - name: Download and Install Qt # Шаг 3: Скачивание и установка Qt напрямую
-      run: |
-        # Скачиваем официальный инсталлятор Qt Online Installer
-        wget https://download.qt.io/official_releases/qt/5.15/5.15.2/qt-opensource-linux-x64-5.15.2.run -O qt_installer.run
-        chmod +x qt_installer.run # Делаем файл исполняемым
-
-        # Создаем файл ответов для автоматической установки
-        # Устанавливаем Qt 5.15.2 GCC 64-bit в папку /opt/Qt
-        # --compact отвечает за установку только необходимых модулей, указанных далее.
-        # Это более компактный способ.
-        cat << EOF > installer_script.qs
-        function Controller() {
-            installer.autoRejectMessageBoxes();
-            installer.installationFinished.connect(function() {
-                gui.clickButton(buttons.Next);
-            })
-        }
-        Controller.prototype.WelcomePageCallback = function() {
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.CredentialsPageCallback = function() {
-            // Если требуется вход в аккаунт Qt, можно добавить данные здесь, но для Open Source обычно не нужно.
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.IntroductionPageCallback = function() {
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.TargetDirectoryPageCallback = function() {
-            installer.setValue("TargetDirectory", "/opt/Qt"); # Директория установки Qt
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.ComponentSelectionPageCallback = function() {
-            var widget = gui.currentPageWidget();
-            widget.deselectAll(); # Сначала отменяем выбор всех компонентов
-
-            # Выбираем только необходимые компоненты:
-            # - qt.qt5.5152.gcc_64 (базовый комплект Qt для GCC 64-бит)
-            # - qt.qt5.5152.qtbase (включает core, gui, widgets, network)
-            widget.selectComponent("qt.qt5.5152.gcc_64");
-            # widget.selectComponent("qt.qt5.5152.qtnetwork"); # Обычно уже входит в qtbase, но можно добавить для ясности
-            # Добавьте другие модули, если они нужны вашему проекту, например:
-            # widget.selectComponent("qt.qt5.5152.qtdeclarative"); # Для QML
-            # widget.selectComponent("qt.qt5.5152.qtsvg"); # Для SVG
-
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.LicenseAgreementPageCallback = function() {
-            gui.currentPageWidget().AcceptLicenseAgreementRadioButton.setChecked(true);
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.ReadyForInstallationPageCallback = function() {
-            gui.clickButton(buttons.Next);
-        }
-        Controller.prototype.FinishedPageCallback = function() {
-            gui.clickButton(buttons.Finish);
-        }
-        EOF
-
-        # Запускаем установщик Qt в безмолвном режиме с использованием файла ответов
-        ./qt_installer.run --script installer_script.qs
-
-        # Добавляем Qt в PATH, чтобы qmake и другие утилиты были доступны
-        echo "/opt/Qt/5.15.2/gcc_64/bin" >> $GITHUB_PATH
-        # Также для корректной работы библиотек
-        echo "/opt/Qt/5.15.2/gcc_64/lib" >> $LD_LIBRARY_PATH
-        export LD_LIBRARY_PATH="/opt/Qt/5.15.2/gcc_64/lib:$LD_LIBRARY_PATH"
+        # build-essential предоставляет g++ и make
+        # libgl1-mesa-dev необходим для поддержки OpenGL, часто нужен для графических приложений Qt
+        sudo apt install -y build-essential libgl1-mesa-dev
 
     - name: Configure Qt Projects # Шаг 4: Настройка проектов с помощью qmake
       run: |
         echo "Configuring server project..."
-        cd server
-        qmake server.pro
-        cd .. # Возвращаемся в корневую папку
+        cd server # Переходим в папку server
+        qmake server.pro # Генерируем Makefile для server.pro
+        cd .. # Возвращаемся в корневую папку рабочего пространства
 
         echo "Configuring client project..."
-        cd client
-        qmake client.pro
-        cd .. # Возвращаемся в корневую папку
+        cd client # Переходим в папку client
+        qmake client.pro # Генерируем Makefile для client.pro
+        cd .. # Возвращаемся в корневую папку рабочего пространства
 
     - name: Build Server # Шаг 5: Сборка серверного приложения
       run: |
         echo "Building server..."
-        cd server
-        make
-        mv server ../server_app # Перемещаем скомпилированный бинарник на уровень выше и переименовываем
-        cd ..
+        cd server # Переходим в папку server
+        make # Компилируем сервер
+        # После make, исполняемый файл будет называться 'server' (по имени .pro файла)
+        # Перемещаем его на уровень выше и переименовываем для удобства
+        mv server ../server_app
+        cd .. # Возвращаемся в корневую папку
 
     - name: Build Client # Шаг 6: Сборка клиентского приложения
       run: |
         echo "Building client..."
-        cd client
-        make
-        mv client ../client_app # Перемещаем скомпилированный бинарник на уровень выше и переименовываем
-        cd ..
+        cd client # Переходим в папку client
+        make # Компилируем клиент
+        # После make, исполняемый файл будет называться 'client'
+        # Перемещаем его на уровень выше и переименовываем для удобства
+        mv client ../client_app
+        cd .. # Возвращаемся в корневую папку
 
     - name: Verify Executables # Шаг 7: Проверка наличия исполняемых файлов
       run: |
         echo "Verifying compiled executables..."
-        ls -l
+        ls -l # Выводим список файлов в текущей директории для отладки
+        # Проверяем существование скомпилированных приложений
         if [ -f server_app ]; then
           echo "Server application (server_app) found."
         else
           echo "Server application (server_app) NOT found!"
-          exit 1
+          exit 1 # Если файл не найден, задача завершается с ошибкой
         fi
         if [ -f client_app ]; then
           echo "Client application (client_app) found."
         else
           echo "Client application (client_app) NOT found!"
-          exit 1
+          exit 1 # Если файл не найден, задача завершается с ошибкой
         fi
 
-    # - name: Run Basic Test (Optional) # Закомментированный шаг для базового запуска
+    # - name: Run Basic Test (Optional) # Опциональный шаг для базового запуска приложений
+    #   # Закомментирован, так как GUI-приложения могут некорректно работать в CI без графической среды.
     #   run: |
     #     echo "Attempting to run server and client..."
+    #     # Запускаем сервер в фоновом режиме, чтобы он не блокировал выполнение
     #     ./server_app &
-    #     SERVER_PID=$!
-    #     sleep 2
+    #     SERVER_PID=$! # Запоминаем ID процесса сервера
+    #     echo "Server started with PID $SERVER_PID"
+    #     sleep 2 # Даем серверу время для инициализации
+    #
+    #     # Запускаем клиент. '|| true' позволяет шагу завершиться успешно, даже если клиент выдаст ошибку
+    #     # (например, из-за отсутствия графики), но при этом запустится.
     #     ./client_app "testuser" || true
-    #     sleep 1
-    #     kill $SERVER_PID || true
+    #     echo "Client attempted to run."
+    #     sleep 1 # Даем клиенту немного времени
+    #
+    #     # Завершаем процесс сервера
+    #     kill $SERVER_PID || true # '|| true' на случай, если сервер уже завершился
     #     echo "Server stopped."
 
-    - name: Upload Build Artifacts (Optional) # Шаг 8 (Опционально): Сохранение скомпилированных файлов
-      uses: actions/upload-artifact@v4
+    - name: Upload Build Artifacts (Optional) # Шаг 8 (Опционально): Сохранение скомпилированных файлов как артефактов
+      # Эти артефакты можно будет скачать со страницы выполнения экшена на GitHub.
+      uses: actions/upload-artifact@v4 # Используем официальный экшен для загрузки артефактов
       with:
-        name: Qt_Apps_Linux_Build
+        name: Qt_Apps_Linux_Build # Имя архива с артефактами
         path: |
-          ./client_app
-          ./server_app
+          ./client_app # Путь к исполняемому файлу клиента
+          ./server_app # Путь к исполняемому файлу сервера
