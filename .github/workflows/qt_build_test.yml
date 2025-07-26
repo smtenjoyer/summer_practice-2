@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Aqtinstall Final)
+name: Build and Test Qt Project on Linux (Aqtinstall Final Fix)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -32,8 +32,8 @@ jobs:
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
-        # ИСПРАВЛЕНИЕ: команда изменена с 'aqt install' на 'aqt install-qt'
-        aqt install-qt 5.15.2 linux desktop -m qtbase --outputdir "$RUNNER_TEMP/Qt"
+        # КОРРЕКТНЫЙ ПОРЯДОК АРГУМЕНТОВ: ОС, ТИП, ВЕРСИЯ.
+        aqt install-qt linux desktop 5.15.2 -m qtbase --outputdir "$RUNNER_TEMP/Qt"
 
         # Добавляем путь к Qt в PATH и LD_LIBRARY_PATH
         echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin" >> $GITHUB_PATH
@@ -106,4 +106,6 @@ jobs:
         name: Qt_Apps_Linux_Build
         path: |
           ./client_app
+          ./client_app.pdb # If debugging symbols are generated for Windows, add them.
           ./server_app
+          ./server_app.pdb # If debugging symbols are generated for Windows, add them.
