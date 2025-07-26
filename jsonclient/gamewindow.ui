@@ -137,14 +137,13 @@ color: rgb(0, 0, 0);</string>
         <x>180</x>
         <y>10</y>
         <width>931</width>
-        <height>41</height>
+        <height>51</height>
        </rect>
       </property>
       <property name="font">
        <font>
-        <pointsize>20</pointsize>
+        <pointsize>24</pointsize>
         <kerning>true</kerning>
-       
        </font>
       </property>
       <property name="layoutDirection">
