@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (DoodleArea.h Debug Fix)
+name: Build and Test Qt Project on Linux (Deep Client Debug)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -17,29 +17,14 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Verify Working Directory (for debugging)
+    - name: Verify Working Directory and Contents (Pre-build)
       run: |
         echo "Current working directory:"
         pwd
-        echo "Contents of current directory:"
-        ls -F
+        echo "Contents of jsonclient/ directory:"
+        ls -F jsonclient/ # Проверяем содержимое только jsonclient
         echo "--- End of directory listing ---"
 
-    - name: Ensure correct case for doodlearea.h # НОВЫЙ ШАГ: принудительное переименование и проверка
-      run: |
-        echo "Checking for jsonclient/DoodleArea.h or jsonclient/doodlearea.h..."
-        if [ -f jsonclient/DoodleArea.h ]; then
-          mv jsonclient/DoodleArea.h jsonclient/doodlearea.h
-          echo "Renamed jsonclient/DoodleArea.h to jsonclient/doodlearea.h"
-        elif [ -f jsonclient/doodlearea.h ]; then
-          echo "jsonclient/doodlearea.h already has correct casing."
-        else
-          echo "Error: Neither jsonclient/DoodleArea.h nor jsonclient/doodlearea.h found!"
-          exit 1
-        fi
-        echo "Verifying file existence and permissions:"
-        ls -l jsonclient/doodlearea.h
-        
     - name: Install Build Essentials and Dependencies
       run: |
         echo "Updating apt packages..."
@@ -82,11 +67,12 @@ jobs:
         mv jsonserver ../server_app
         cd ..
 
-    - name: Build Client
+    - name: Build Client (Verbose)
       run: |
         echo "Building client (jsonclient)..."
         cd jsonclient
-        make -j$(nproc)
+        # Используем V=1 для подробного вывода make
+        make -j$(nproc) V=1 
         mv jsonclient ../client_app
         cd ..
 
