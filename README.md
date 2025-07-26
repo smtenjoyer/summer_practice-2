@@ -16,7 +16,7 @@
 *	сетевой адаптер.
     
 ## Требования к информационной и программной совместимости
-* Программная система должна функционировать под операционной системой Ubuntu 64-bit, Microsoft Windows 10, Microsoft Windows 11 или совместимые.
+* Программная система должна функционировать под операционной системой Ubuntu 22.04 LTS, Microsoft Windows 10, Microsoft Windows 11 или совместимые.
 * Язык пользовательского интерфейса программы — русский.
 * Среда разработки: Qt Creator 
 * Версия Qt: 6.8.2
@@ -33,6 +33,31 @@
 * Собрать проект. Для этого на левой панели нужно выбрать проекты и настроить сборку.
 * Конфигурация сборки:выпуск
 * Обычные игроки запускают только jsonclient, хост же запускает оба проекта (см. пункт Сетевое взаимодействие)
+
+## Сборка проекта на Ubuntu 22.04 LTS
+
+### Предварительные требования
+Убедитесь, что у вас установлены следующие пакеты:
+  * sudo apt update
+  * sudo apt install -y git build-essential cmake qt6-base-dev qt6-tools-dev qt6-declarative-dev qt6-quick-dev qt6-quickcontrols2-dev qtcreator
+Установка и сборка:
+* Клонировать репозиторий:
+  * git clone https://github.com/smtenjoyer/summer_practice-2
+  * cd summer_practice-2
+* Удалить папку build, если она существует
+* Открыть проекты в Qt Creator:
+   * Запустите Qt Creator (qtcreator в терминале)
+   * Меню "File" → "Open File or Project"
+   * Выберите jsonserver/jsonserver.pro или jsonclient/jsonclient.pro
+* Настройка сборки в Qt Creator:
+   * В левой панели выберите "Projects"
+   * Убедитесь, что выбран комплект "Desktop Qt 6.x.x GCC 64-bit"
+   * В разделе "Build Settings" выберите конфигурацию "Release"
+   * Нажмите "Configure Project"
+Сборка проекта:
+   * Нажмите кнопку "Build" (молоток в нижней панели)
+   * Или через меню: "Build" → "Build All"
+   
 
 ## Сетевое взаимодействие
 Для игры по сети рекомендуется использовать ZeroTier для создания виртуальной локальной сети.
