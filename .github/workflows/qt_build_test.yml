@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Aqtinstall)
+name: Build and Test Qt Project on Linux (Aqtinstall Final)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -32,18 +32,10 @@ jobs:
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
-        # Установка Qt 5.15.2 (LTS) для Linux GCC 64-bit
-        # Опция --archives необходима, если aqtinstall не может найти все архивы автоматически.
-        # common -- это базовые файлы, tools_qtcreator -- Qt Creator (необязательно, но полезно),
-        # qtbase -- основные модули (Core, GUI, Widgets, Network),
-        # qtdeclarative -- для QML (если нужен),
-        # qtsvg -- для SVG (если нужен).
-        # Я оставил только те, что точно нужны, и добавил qtdeclarative как пример.
-        # Если QML не используется, можете убрать qtdeclarative.
-        aqt install 5.15.2 linux desktop -m qtbase qtdeclarative --archives common tools_qtcreator --outputdir "$RUNNER_TEMP/Qt"
+        # ИСПРАВЛЕНИЕ: команда изменена с 'aqt install' на 'aqt install-qt'
+        aqt install-qt 5.15.2 linux desktop -m qtbase --outputdir "$RUNNER_TEMP/Qt"
 
         # Добавляем путь к Qt в PATH и LD_LIBRARY_PATH
-        # Это критически важно, чтобы qmake и скомпилированные приложения нашли нужные библиотеки Qt.
         echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin" >> $GITHUB_PATH
         echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib" >> $LD_LIBRARY_PATH
         export LD_LIBRARY_PATH="$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib:$LD_LIBRARY_PATH"
