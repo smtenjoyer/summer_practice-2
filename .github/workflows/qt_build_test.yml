@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Directory Debug)
+name: Build and Test Qt Project on Linux (Final Directory Fix)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -17,12 +17,12 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Debug Working Directory and Contents # НОВЫЙ ШАГ: Выводим содержимое для отладки
+    - name: Verify Working Directory (for debugging) # Оставим этот шаг для уверенности, можно будет удалить позже
       run: |
         echo "Current working directory:"
         pwd
         echo "Contents of current directory:"
-        ls -R # Используем ls -R для рекурсивного вывода содержимого
+        ls -F
         echo "--- End of directory listing ---"
 
     - name: Install Build Essentials and Dependencies
@@ -49,32 +49,30 @@ jobs:
 
     - name: Configure Qt Projects
       run: |
-        echo "Configuring server project..."
-        # Здесь нам нужно будет изменить `cd server` на правильный путь,
-        # как только мы узнаем его из вывода `ls -R`
-        cd server # Это строка, которая сейчас вызывает ошибку
-        qmake server.pro
+        echo "Configuring server project (jsonserver)..."
+        cd jsonserver # ИЗМЕНЕНО: теперь используем 'jsonserver'
+        qmake jsonserver.pro # ИЗМЕНЕНО: теперь используем 'jsonserver.pro'
         cd ..
 
-        echo "Configuring client project..."
-        cd client
-        qmake client.pro
+        echo "Configuring client project (jsonclient)..."
+        cd jsonclient # ИЗМЕНЕНО: теперь используем 'jsonclient'
+        qmake jsonclient.pro # ИЗМЕНЕНО: теперь используем 'jsonclient.pro'
         cd ..
 
     - name: Build Server
       run: |
-        echo "Building server..."
-        cd server
+        echo "Building server (jsonserver)..."
+        cd jsonserver # ИЗМЕНЕНО: теперь используем 'jsonserver'
         make -j$(nproc)
-        mv server ../server_app
+        mv jsonserver ../server_app # ИЗМЕНЕНО: перемещаем 'jsonserver' в 'server_app'
         cd ..
 
     - name: Build Client
       run: |
-        echo "Building client..."
-        cd client
+        echo "Building client (jsonclient)..."
+        cd jsonclient # ИЗМЕНЕНО: теперь используем 'jsonclient'
         make -j$(nproc)
-        mv client ../client_app
+        mv jsonclient ../client_app # ИЗМЕНЕНО: перемещаем 'jsonclient' в 'client_app'
         cd ..
 
     - name: Verify Executables
