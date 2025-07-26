@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Aqtinstall No qtbase)
+name: Build and Test Qt Project on Linux (LD_LIBRARY_PATH Fix)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -30,17 +30,20 @@ jobs:
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
-        # УБРАНА опция '-m qtbase', полагаем, что основные модули включены по умолчанию
         aqt install-qt linux desktop 5.15.2 gcc_64 --outputdir "$RUNNER_TEMP/Qt"
 
-        # Добавляем путь к Qt в PATH и LD_LIBRARY_PATH
-        echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin" >> $GITHUB_PATH
-        echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib" >> $LD_LIBRARY_PATH
-        export LD_LIBRARY_PATH="$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib:$LD_LIBRARY_PATH"
+        # Правильно добавляем пути к переменным окружения для текущего шага.
+        # Этот подход использует GITHUB_ENV для сохранения переменных между шагами.
+        echo "QT_PATH=$RUNNER_TEMP/Qt/5.15.2/gcc_64" >> $GITHUB_ENV
+        echo "PATH=$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin:$PATH" >> $GITHUB_ENV
+        
+        # Корректное добавление к LD_LIBRARY_PATH
+        # Используем подстановку по умолчанию, чтобы избежать "ambiguous redirect"
+        echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$RUNNER_TEMP/Qt/5.15.2/gcc_64/lib" >> $GITHUB_ENV
 
-        # Выведем PATH и LD_LIBRARY_PATH для отладки
-        echo "PATH: $PATH"
-        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        # Выведем PATH и LD_LIBRARY_PATH для отладки, они будут доступны в следующих шагах
+        echo "PATH (after setting in GITHUB_ENV): $PATH"
+        echo "LD_LIBRARY_PATH (after setting in GITHUB_ENV): $LD_LIBRARY_PATH"
 
     - name: Configure Qt Projects
       run: |
