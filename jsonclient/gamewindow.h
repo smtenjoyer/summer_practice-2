@@ -15,6 +15,7 @@
 
 class DoodleArea;
 
+
 namespace Ui {
 class GameWindow;
 }
