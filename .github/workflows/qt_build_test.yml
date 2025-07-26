@@ -1,48 +1,38 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Robust Apt Install)
+name: Build and Test Qt Project on Linux (Docker Image)
 
 # События, которые запускают этот рабочий процесс
 on:
   push:
-    branches: [ main, master ] # Запуск при коммитах в ветки main или master
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ] # Запуск при пулл-реквестах в ветки main или master
+    branches: [ main, master ]
 
 # Определяем задачи (jobs)
 jobs:
   build_linux:
-    # Операционная система, на которой будет выполняться задача
-    runs-on: ubuntu-latest # Используем последнюю версию Ubuntu LTS (сейчас это 24.04 Noble)
+    # Обязательно указываем, на каком раннере будет запущен контейнер
+    runs-on: ubuntu-latest # <--- ЭТА СТРОКА БЫЛА ОТСУТСТВУЮЩЕЙ!
+    
+    # Указываем Docker-образ, в котором будут выполняться шаги
+    container: ubuntu:22.04 # Используем стабильный образ Ubuntu 22.04 LTS (Jammy Jellyfish)
 
     # Шаги, которые будут выполняться
     steps:
-    - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Configure Repositories and Install Qt/Build Tools (via Apt for Ubuntu 24.04) # Шаг 2: Настройка репозиториев и установка Qt/инструментов
+    - name: Install Qt and Build Tools (inside Docker)
       run: |
         echo "Updating apt packages..."
-        sudo apt update -y
+        apt update -y 
         
-        # Добавляем репозиторий 'universe', где часто находятся dev-пакеты Qt
-        echo "Adding 'universe' repository..."
-        sudo apt install -y software-properties-common # Убедимся, что инструмент для добавления репозиториев установлен
-        sudo add-apt-repository universe -y # Добавляем universe репозиторий
-        
-        echo "Re-updating apt packages after adding repository..."
-        sudo apt update -y # Обновляем список пакетов после добавления репозитория
-        
-        echo "Installing build essentials and Qt5 libraries for Ubuntu 24.04..."
-        # build-essential для компилятора g++ и make
-        # qt5-qmake для генерации Makefile из .pro файлов
-        # libqt5core5-dev, libqt5gui5-dev, libqt5widgets5-dev, libqt5network5-dev - основные модули Qt5
-        # (core, gui, widgets, network). Теперь они должны быть доступны после добавления 'universe'.
-        # libgl1-mesa-dev - для поддержки OpenGL, часто требуется для графических Qt-приложений
-        sudo apt install -y build-essential qt5-qmake libqt5core5-dev libqt5gui5-dev libqt5widgets5-dev libqt5network5-dev libgl1-mesa-dev
+        echo "Installing build essentials and Qt5 libraries for Ubuntu 22.04..."
+        apt install -y build-essential qt5-qmake libqt5core5-dev libqt5gui5-dev libqt5widgets5-dev libqt5network5-dev libgl1-mesa-dev
 
         echo "Installed Qt and build tools."
-
-    - name: Configure Qt Projects # Шаг 3: Настройка проектов с помощью qmake
+    
+    - name: Configure Qt Projects
       run: |
         echo "Configuring server project..."
         cd server
@@ -54,7 +44,7 @@ jobs:
         qmake client.pro
         cd ..
 
-    - name: Build Server # Шаг 4: Сборка серверного приложения
+    - name: Build Server
       run: |
         echo "Building server..."
         cd server
@@ -62,7 +52,7 @@ jobs:
         mv server ../server_app
         cd ..
 
-    - name: Build Client # Шаг 5: Сборка клиентского приложения
+    - name: Build Client
       run: |
         echo "Building client..."
         cd client
@@ -70,7 +60,7 @@ jobs:
         mv client ../client_app
         cd ..
 
-    - name: Verify Executables # Шаг 6: Проверка наличия исполняемых файлов
+    - name: Verify Executables
       run: |
         echo "Verifying compiled executables..."
         ls -l
@@ -98,7 +88,7 @@ jobs:
     #     kill $SERVER_PID || true
     #     echo "Server stopped."
 
-    - name: Upload Build Artifacts (Optional) # Шаг 7 (Опционально): Сохранение скомпилированных файлов как артефактов
+    - name: Upload Build Artifacts (Optional)
       uses: actions/upload-artifact@v4
       with:
         name: Qt_Apps_Linux_Build
