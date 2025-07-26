@@ -23,12 +23,16 @@ jobs:
       run: |
         echo "Updating apt packages..."
         sudo apt update -y
-        echo "Installing build essentials and Qt5 libraries..."
-        # Устанавливаем базовые инструменты для сборки C++, а также Qt Creator, основные dev-файлы Qt5
-        # и модуль для работы с сетью (qt5-network-dev), который нужен для вашего проекта.
-        sudo apt install -y build-essential qtcreator qtbase5-dev qt5-qmake qt5-default qt5-network-dev libgl1-mesa-dev
-        # В вашем проекте используются только базовые модули и сеть, поэтому дополнительных не нужно.
-        # Если в будущем добавите, например, SVG-изображения, нужно будет добавить 'qt5-svg-dev'.
+        echo "Installing build essentials and Qt5 libraries for Ubuntu 24.04..."
+        # Устанавливаем базовые инструменты для сборки C++
+        sudo apt install -y build-essential
+        # Устанавливаем основные библиотеки Qt5.
+        # В Ubuntu 24.04 Qt Creator и его зависимости обычно устанавливаются через 'qtbase5-dev'
+        # и другие конкретные модули, а 'qt5-default' убран.
+        # Для сети теперь нужен 'libqt5network5-dev'.
+        sudo apt install -y qtbase5-dev libqt5network5-dev libgl1-mesa-dev
+        # 'qt5-qmake' часто уже идет с 'qtbase5-dev', но можно добавить для уверенности:
+        sudo apt install -y qt5-qmake
 
     - name: Build Server # Шаг 3: Сборка серверного приложения
       run: |
