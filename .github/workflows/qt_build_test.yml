@@ -1,5 +1,5 @@
 # Имя рабочего процесса, отображаемое на GitHub Actions
-name: Build and Test Qt Project on Linux (Aqtinstall Final, Final Fix!)
+name: Build and Test Qt Project on Linux (Aqtinstall No qtbase)
 
 # События, которые запускают этот рабочий процесс
 on:
@@ -14,27 +14,24 @@ jobs:
     runs-on: ubuntu-latest # Запускаем на стандартной машине GitHub Actions
     
     steps:
-    - name: Checkout Repository # Шаг 1: Клонирование вашего репозитория
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Build Essentials and Dependencies # Шаг 2: Установка базовых инструментов (без Qt)
+    - name: Install Build Essentials and Dependencies
       run: |
         echo "Updating apt packages..."
         sudo apt update -y
         echo "Installing build essentials and other core libraries..."
-        # build-essential для g++, make. libgl1-mesa-dev для OpenGL.
-        # Python3 и pip нужны для aqtinstall.
         sudo apt install -y build-essential libgl1-mesa-dev python3 python3-pip
 
-    - name: Install Qt using aqtinstall # Шаг 3: Установка Qt с помощью aqtinstall
+    - name: Install Qt using aqtinstall
       run: |
         echo "Installing aqtinstall..."
         pip3 install aqtinstall
 
         echo "Installing Qt 5.15.2 for linux/gcc_64..."
-        # ИСПРАВЛЕНИЕ: Добавлена архитектура 'gcc_64' после версии и модуль 'qtbase'
-        # и опция --archives common для надежности.
-        aqt install-qt linux desktop 5.15.2 gcc_64 -m qtbase --archives common --outputdir "$RUNNER_TEMP/Qt"
+        # УБРАНА опция '-m qtbase', полагаем, что основные модули включены по умолчанию
+        aqt install-qt linux desktop 5.15.2 gcc_64 --outputdir "$RUNNER_TEMP/Qt"
 
         # Добавляем путь к Qt в PATH и LD_LIBRARY_PATH
         echo "$RUNNER_TEMP/Qt/5.15.2/gcc_64/bin" >> $GITHUB_PATH
@@ -45,7 +42,7 @@ jobs:
         echo "PATH: $PATH"
         echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 
-    - name: Configure Qt Projects # Шаг 4: Настройка проектов с помощью qmake
+    - name: Configure Qt Projects
       run: |
         echo "Configuring server project..."
         cd server
@@ -57,7 +54,7 @@ jobs:
         qmake client.pro
         cd ..
 
-    - name: Build Server # Шаг 5: Сборка серверного приложения
+    - name: Build Server
       run: |
         echo "Building server..."
         cd server
@@ -65,7 +62,7 @@ jobs:
         mv server ../server_app
         cd ..
 
-    - name: Build Client # Шаг 6: Сборка клиентского приложения
+    - name: Build Client
       run: |
         echo "Building client..."
         cd client
@@ -73,7 +70,7 @@ jobs:
         mv client ../client_app
         cd ..
 
-    - name: Verify Executables # Шаг 7: Проверка наличия исполняемых файлов
+    - name: Verify Executables
       run: |
         echo "Verifying compiled executables..."
         ls -l
@@ -101,7 +98,7 @@ jobs:
     #     kill $SERVER_PID || true
     #     echo "Server stopped."
 
-    - name: Upload Build Artifacts (Optional) # Шаг 8 (Опционально): Сохранение скомпилированных файлов как артефактов
+    - name: Upload Build Artifacts (Optional)
       uses: actions/upload-artifact@v4
       with:
         name: Qt_Apps_Linux_Build
